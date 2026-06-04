@@ -1,0 +1,12 @@
+{
+  "name": "ari-app",
+  "version": "1.0.0",
+  "description": "ARI - Asistente de Belleza",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "author": "",
+  "license": "ISC"
+}

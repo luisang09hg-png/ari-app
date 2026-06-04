@@ -1,0 +1,15 @@
+{
+  "name": "ARI — Tu Asistente de Belleza",
+  "short_name": "ARI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FE0182",
+  "icons": [
+    {
+      "src": "https://www.aruma.pe/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
