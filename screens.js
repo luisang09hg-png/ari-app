@@ -38,29 +38,59 @@ function getProductImgSrc(prod) {
 }
 
 // ── Helper: compact product card HTML
-function renderCompactCard(prod, context = '') {
+function renderCompactCard(prod, context = '', stepIndex) {
   const imgSrc = getProductImgSrc(prod);
   const emoji  = getStepEmoji(prod.pasoRutina);
   const time   = getRoutineTime(prod.pasoRutina);
   const timeTag = time === 'AM'   ? '<span class="tag-am">☀️ AM</span>'
                 : time === 'PM'   ? '<span class="tag-pm">🌙 PM</span>'
                 :                   '<span class="tag-ampm">☀️🌙 AM/PM</span>';
+
+  const stepTag = stepIndex !== undefined ? `<span style="background:var(--color-primary); color:white; font-size:0.7em; font-weight:700; padding:2px 8px; border-radius:10px; margin-right:6px; vertical-align:middle;">Paso ${stepIndex}</span>` : '';
+
+  let modoUso = "Aplicar sobre el rostro limpio.";
+  let advertencia = "Para uso externo únicamente.";
+  if (prod.fase === 1) {
+    modoUso = "Aplicar sobre rostro húmedo, masajear suavemente y enjuagar con abundante agua.";
+    advertencia = "Evitar el contacto directo con los ojos. En caso de irritación, suspender uso.";
+  } else if (prod.fase === 2) {
+    modoUso = "Colocar unas gotas en la palma de las manos y presionar suavemente sobre la piel limpia.";
+    advertencia = "No aplicar sobre piel lesionada o quemada por el sol.";
+  } else if (prod.fase === 3) {
+    modoUso = "Aplicar 3 a 4 gotas sobre el rostro y cuello, distribuyendo de adentro hacia afuera.";
+    advertencia = "Si contiene ácidos o retinol, usar bloqueador FPS 50+ durante el día.";
+  } else if (prod.fase === 4) {
+    modoUso = "Aplicar una capa uniforme sobre rostro y cuello mediante masajes ascendentes.";
+    advertencia = "Mantener fuera del alcance de los niños.";
+  } else if (prod.fase === 5) {
+    modoUso = "Aplicar generosamente en todo el rostro 15 minutos antes de la exposición solar.";
+    advertencia = "Reaplicar cada 2 a 3 horas, especialmente después de sudar o nadar.";
+  }
+
   return `
-    <div class="product-card-compact fade-in" onclick="router.navigate('/producto/${prod.id}')" role="button" tabindex="0">
-      <img src="${imgSrc}" class="thumb" alt="${prod.nombre}"
-        onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-      <div class="thumb-fallback" style="display:none; background:${prod.imagenFallback};">
-        <span style="font-size:1.6em;">${emoji}</span>
-      </div>
-      <div class="info">
-        <div class="brand">${prod.marca}</div>
-        <div class="name">${prod.nombre}</div>
-        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px;">
-          <div class="price">S/ ${prod.precio ? prod.precio.toFixed(2) : '---'}</div>
-          ${timeTag}
+    <div class="product-card-compact fade-in" onclick="router.navigate('/producto/${prod.id}')" role="button" tabindex="0" style="flex-direction: column; align-items: stretch; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 12px; width: 100%;">
+        <img src="${imgSrc}" class="thumb" alt="${prod.nombre}"
+          onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        <div class="thumb-fallback" style="display:none; background:${prod.imagenFallback};">
+          <span style="font-size:1.6em;">${emoji}</span>
         </div>
+        <div class="info" style="flex: 1;">
+          <div class="brand">${prod.marca}</div>
+          <div class="name" style="font-weight:600; font-size:0.88em; margin-bottom:4px; white-space: normal; overflow: visible; text-overflow: clip;">${stepTag}${prod.nombre}</div>
+          <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:3px;">
+            <div class="price" style="font-weight:700; color:var(--color-primary); font-size:0.85em;">S/ ${prod.precio ? prod.precio.toFixed(2) : '---'}</div>
+            ${timeTag}
+          </div>
+        </div>
+        <button class="add-btn add-to-cart" data-id="${prod.id}" onclick="event.stopPropagation()" title="Añadir a bolsa">+</button>
       </div>
-      <button class="add-btn add-to-cart" data-id="${prod.id}" onclick="event.stopPropagation()" title="Añadir a bolsa">+</button>
+      <div class="product-details-extra" style="border-top: 1px solid rgba(0,0,0,0.05); padding-top: 6px; font-size: 0.78em; color: var(--color-text-soft);">
+        <div style="margin-bottom: 2px;"><strong>Activo:</strong> ${prod.ingrediente_activo || 'Fórmula calmante'}</div>
+        <div style="margin-bottom: 2px;"><strong>Beneficio:</strong> ${prod.indicacion_clinica || 'Cuidado facial'}</div>
+        <div style="margin-bottom: 2px; line-height: 1.35;"><strong>Uso:</strong> ${modoUso}</div>
+        <div style="color: #FF7043; line-height: 1.35;"><strong>Precaución:</strong> ${advertencia}</div>
+      </div>
     </div>
   `;
 }
@@ -109,45 +139,155 @@ const Screens = {
     _answers: {},
 
     _steps: [
+      // SECCIÓN 1: Tu piel hoy
       {
-        key: 'tipoPiel',
-        question: '¿Cómo sientes tu piel normalmente?',
+        section: 'Tu piel hoy',
+        key: 'tipoPielMañana',
+        question: '¿Cómo sientes tu piel al despertar por las mañanas?',
         options: [
-          { val: 'grasa',     emoji: '🫧', label: 'Grasa',     sub: 'Brillo constante' },
-          { val: 'mixta',     emoji: '✨', label: 'Mixta',     sub: 'Zona T brillante' },
-          { val: 'seca',      emoji: '🌵', label: 'Seca',      sub: 'Tirante o áspera' },
-          { val: 'sensible',  emoji: '🌹', label: 'Sensible',  sub: 'Se enrojece fácil' },
-          { val: 'normal',    emoji: '💫', label: 'Normal',    sub: 'Sin problemas' },
+          { val: 'grasa',     emoji: '🫧', label: 'Grasa',      sub: 'Brillosa en todo el rostro' },
+          { val: 'mixta',     emoji: '✨', label: 'Mixta',      sub: 'Brillosa en zona T, mejillas secas' },
+          { val: 'seca',      emoji: '🌵', label: 'Seca',       sub: 'Tirante o con descamación' },
+          { val: 'sensible',  emoji: '🌹', label: 'Sensible',   sub: 'Fácil enrojecimiento' },
+          { val: 'normal',    emoji: '💫', label: 'Normal',     sub: 'Balanceada y cómoda' }
         ]
       },
       {
-        key: 'preocupacion',
-        question: '¿Cuál es tu principal preocupación?',
+        section: 'Tu piel hoy',
+        key: 'brillo',
+        question: '¿Con qué frecuencia notas brillos no deseados durante el día?',
         options: [
-          { val: 'acne',              emoji: '😤', label: 'Acné',          sub: 'Granitos y poros' },
-          { val: 'manchas',           emoji: '🎭', label: 'Manchas',       sub: 'Tono desigual' },
-          { val: 'deshidratacion',    emoji: '💧', label: 'Hidratación',   sub: 'Piel sin agua' },
-          { val: 'arrugas_expresion', emoji: '⏳', label: 'Líneas',        sub: 'Expresión y edad' },
+          { val: 'siempre',   emoji: '✨', label: 'Siempre',    sub: 'En todo el rostro' },
+          { val: 'zona_t',    emoji: '🎯', label: 'Zona T',     sub: 'Frente, nariz y mentón' },
+          { val: 'raramente', emoji: '💧', label: 'Raras veces',sub: 'Acabado mate natural' },
+          { val: 'nunca',     emoji: '🌵', label: 'Nunca',      sub: 'Piel opaca o seca' }
         ]
       },
       {
+        section: 'Tu piel hoy',
+        key: 'poros',
+        question: '¿Cómo describirías la visibilidad de tus poros?',
+        options: [
+          { val: 'grandes',   emoji: '🔍', label: 'Muy visibles',sub: 'Poros abiertos en general' },
+          { val: 'zona_t',    emoji: '🎯', label: 'Medios',      sub: 'Solo visibles en la zona T' },
+          { val: 'pequenos',  emoji: '🥚', label: 'Pequeños',    sub: 'Piel lisa y uniforme' }
+        ]
+      },
+      {
+        section: 'Tu piel hoy',
+        key: 'textura',
+        question: '¿Cómo describirías la textura de tu piel al tacto?',
+        options: [
+          { val: 'oleosa',    emoji: '🧴', label: 'Oleosa',      sub: 'Sensación grasosa' },
+          { val: 'desigual',  emoji: '🎭', label: 'Desigual',    sub: 'Áspera y grasa a la vez' },
+          { val: 'aspera',    emoji: '🍂', label: 'Áspera',      sub: 'Sensación de sequedad' },
+          { val: 'suave',     emoji: '🌸', label: 'Suave',       sub: 'Tersa y elástica' }
+        ]
+      },
+      {
+        section: 'Tu piel hoy',
+        key: 'sensibilidad_hoy',
+        question: '¿Tu piel se siente irritada, tirante o caliente en este momento?',
+        options: [
+          { val: 'si',        emoji: '🥵', label: 'Sí, bastante',sub: 'Molestia o rojez activa' },
+          { val: 'un_poco',   emoji: '😐', label: 'Un poco',     sub: 'Ligera tirantez' },
+          { val: 'no',        emoji: '😊', label: 'No, cómoda',  sub: 'Piel tranquila y estable' }
+        ]
+      },
+
+      // SECCIÓN 2: Tu historial
+      {
+        section: 'Tu historial',
+        key: 'reaccion_productos',
+        question: 'Cuando usas un product cosmético nuevo, ¿cómo reacciona tu piel?',
+        options: [
+          { val: 'siempre',   emoji: '🔥', label: 'Suele arder', sub: 'Arde, pica o se enrojece' },
+          { val: 'a_veces',   emoji: '⚠️', label: 'A veces',     sub: 'Alguna molestia leve' },
+          { val: 'raramente', emoji: '🛡️', label: 'Tolera todo',  sub: 'Rara vez reacciona' }
+        ]
+      },
+      {
+        section: 'Tu historial',
+        key: 'rojez',
+        question: '¿Qué tan fácil se enrojece tu piel con el sol, ejercicio o frío?',
+        options: [
+          { val: 'siempre',   emoji: '🍅', label: 'Muy fácil',   sub: 'Enrojecimiento inmediato' },
+          { val: 'moderadamente', emoji: '🍎', label: 'Moderadamente', sub: 'Pasa después de un rato' },
+          { val: 'raramente', emoji: '👤', label: 'Rara vez',    sub: 'Tono estable' }
+        ]
+      },
+      {
+        section: 'Tu historial',
+        key: 'acne_historial',
+        question: '¿Con qué frecuencia presentas brotes de acné o granitos?',
+        options: [
+          { val: 'siempre',   emoji: '💥', label: 'Frecuente',   sub: 'Granitos activos de forma constante' },
+          { val: 'a_veces',   emoji: '🩹', label: 'Ocasional',   sub: 'Brotes leves o cíclicos' },
+          { val: 'nunca',     emoji: '✨', label: 'Nunca',       sub: 'Rara vez o nunca' }
+        ]
+      },
+      {
+        section: 'Tu historial',
+        key: 'manchas_historial',
+        question: '¿Tu piel tiende a mancharse con el sol o por marcas de granitos?',
+        options: [
+          { val: 'si',        emoji: '🎨', label: 'Sí, fácil',   sub: 'Hiperpigmentación frecuente' },
+          { val: 'aveces',    emoji: '⛅', label: 'A veces',     sub: 'Algunas manchas suaves' },
+          { val: 'nunca',     emoji: '☀️', label: 'Rara vez',    sub: 'Tono muy uniforme' }
+        ]
+      },
+      {
+        section: 'Tu historial',
+        key: 'lineas_expresion',
+        question: '¿Notas líneas de expresión o pérdida de firmeza en tu rostro?',
+        options: [
+          { val: 'si',        emoji: '⏳', label: 'Marcadas',    sub: 'Frente u ojos' },
+          { val: 'aveces',    emoji: '🌀', label: 'Líneas finas',sub: 'Solo al gesticular' },
+          { val: 'nunca',     emoji: '🛡️', label: 'Piel firme',  sub: 'Muy firme y elástica' }
+        ]
+      },
+
+      // SECCIÓN 3: Tus hábitos
+      {
+        section: 'Tus hábitos',
+        key: 'clima',
+        question: '¿En qué tipo de clima pasas la mayor parte del tiempo?',
+        options: [
+          { val: 'humedo',    emoji: '🌴', label: 'Húmedo/Cálido',sub: 'Clima tropical' },
+          { val: 'seco',      emoji: '🏔️', label: 'Seco/Frío',   sub: 'Zonas secas o frías' },
+          { val: 'templado',  emoji: '🏢', label: 'Templado',    sub: 'Oficina / Aire acondicionado' }
+        ]
+      },
+      {
+        section: 'Tus hábitos',
+        key: 'agua',
+        question: '¿Cuánta agua bebes en promedio al día?',
+        options: [
+          { val: 'poco',      emoji: '🥛', label: 'Poca',        sub: 'Menos de 1 litro al día' },
+          { val: 'medio',     emoji: '🥤', label: 'Moderada',    sub: 'Entre 1 y 2 litros' },
+          { val: 'mucho',     emoji: '🏺', label: 'Suficiente',  sub: 'Más de 2 litros' }
+        ]
+      },
+      {
+        section: 'Tus hábitos',
         key: 'experiencia',
-        question: '¿Cuánta experiencia tienes con rutinas de belleza?',
+        question: '¿Cuál es tu experiencia con el cuidado de la piel?',
         options: [
-          { val: 'principiante', emoji: '🌱', label: 'Principiante', sub: 'Primera rutina' },
-          { val: 'intermedio',   emoji: '🌿', label: 'Intermedia',   sub: 'Uso algunos productos' },
-          { val: 'avanzado',     emoji: '🌳', label: 'Avanzada',     sub: 'Conozco ácidos y activos' },
+          { val: 'principiante', emoji: '🌱', label: 'Principiante',sub: 'Busco algo simple' },
+          { val: 'intermedio',   emoji: '🌿', label: 'Intermedia',  sub: 'Uso cremas y bloqueador' },
+          { val: 'avanzado',     emoji: '🌳', label: 'Avanzada',    sub: 'Uso sérums y ácidos' }
         ]
       },
       {
+        section: 'Tus hábitos',
         key: 'presupuesto',
-        question: '¿Cuál es tu presupuesto mensual aproximado?',
+        question: '¿Qué presupuesto prefieres para los productos de tu rutina?',
         options: [
-          { val: 'bajo',  emoji: '🪙', label: 'Básico',    sub: 'Hasta S/100' },
-          { val: 'medio', emoji: '💳', label: 'Moderado',  sub: 'S/100 – S/200' },
-          { val: 'alto',  emoji: '💎', label: 'Premium',   sub: 'Más de S/200' },
+          { val: 'bajo',      emoji: '🪙', label: 'Accesible',   sub: 'Menos de S/ 50 por producto' },
+          { val: 'medio',     emoji: '💳', label: 'Moderado',    sub: 'S/ 50 - S/ 120 por producto' },
+          { val: 'alto',      emoji: '💎', label: 'Premium',     sub: 'Fórmulas dermatológicas top' }
         ]
-      },
+      }
     ],
 
     render() {
@@ -179,7 +319,7 @@ const Screens = {
           <div class="steps-indicator">
             ${dots}
           </div>
-          <p class="step-label">Paso ${stepIdx + 1} de ${total}</p>
+          <p class="step-label">Sección: <strong>${step.section}</strong> | Paso ${stepIdx + 1} de ${total}</p>
 
           <div class="quiz-step" id="quiz-step-${stepIdx}">
             <p class="quiz-question">${step.question}</p>
@@ -232,10 +372,34 @@ const Screens = {
             } else {
               // All answered — save to store
               const ans = Screens.questionnaire._answers;
-              const tipoPiel = ans.tipoPiel || 'normal';
+              const tipoPiel = ans.tipoPielMañana || 'normal';
+              
+              // Map sensitivity
+              const sensibilidad = (tipoPiel === 'sensible' || ans.sensibilidad_hoy === 'si' || ans.reaccion_productos === 'siempre') ? 'alta' : 'baja';
+              
+              // Map preocupaciones
+              const preocupaciones = [];
+              if (ans.acne_historial === 'siempre') preocupaciones.push('acne');
+              if (ans.manchas_historial === 'si') preocupaciones.push('manchas');
+              if (ans.lineas_expresion === 'si') preocupaciones.push('arrugas_expresion');
+              if (ans.brillo === 'siempre') preocupaciones.push('brillo');
+              if (preocupaciones.length === 0) preocupaciones.push('deshidratacion');
+
+              // Save flat answers to store
+              store.state.perfilUsuario.tipoPielMañana = ans.tipoPielMañana;
+              store.state.perfilUsuario.brillo = ans.brillo;
+              store.state.perfilUsuario.poros = ans.poros;
+              store.state.perfilUsuario.textura = ans.textura;
+              store.state.perfilUsuario.sensibilidad_hoy = ans.sensibilidad_hoy;
+              store.state.perfilUsuario.reaccion_productos = ans.reaccion_productos;
+              store.state.perfilUsuario.rojez = ans.rojez;
+              store.state.perfilUsuario.acne_historial = ans.acne_historial;
+              store.state.perfilUsuario.agua = ans.agua;
+              store.state.perfilUsuario.clima = ans.clima;
+
               store.updatePerfil('tipoPiel',       tipoPiel);
-              store.updatePerfil('sensibilidad',   tipoPiel === 'sensible' ? 'alta' : 'baja');
-              store.updatePerfil('preocupaciones', [ans.preocupacion || 'deshidratacion']);
+              store.updatePerfil('sensibilidad',   sensibilidad);
+              store.updatePerfil('preocupaciones', preocupaciones);
               store.updatePerfil('experiencia',    ans.experiencia || 'principiante');
               store.updatePerfil('presupuesto',    ans.presupuesto || 'medio');
               router.navigate('/procesando');
@@ -300,6 +464,9 @@ const Screens = {
             <div class="scanner-instruction">Mantén tu rostro dentro del óvalo</div>
             <div class="scan-line"></div>
             <div class="scanner-guide"></div>
+            <div class="scanner-progress-container" style="width: 80%; height: 6px; background: rgba(255,255,255,0.25); border-radius: 3px; margin: 10px auto; overflow: hidden; position: absolute; bottom: 50px; left: 10%;">
+              <div id="scanner-progress-bar" style="width: 0%; height: 100%; background: #FE0182; transition: width 0.1s ease-out;"></div>
+            </div>
             <div id="scanner-text" class="scanner-status">Estabilizando...</div>
           </div>
         </div>
@@ -313,12 +480,13 @@ const Screens = {
       if (window.lucide) lucide.createIcons();
 
       let scannerActive = false;
-      let framesEstables = 0;
       let faceMesh = null;
       let camera   = null;
+      let accumulatedFrames = [];
 
       Screens.scanner._destroyScanner = () => {
         scannerActive = false;
+        accumulatedFrames = [];
         if (camera) { camera.stop(); camera = null; }
         if (faceMesh) { try { faceMesh.close(); } catch(e){} faceMesh = null; }
         const video = document.getElementById('video-input');
@@ -400,7 +568,10 @@ const Screens = {
           scannerPrep.style.display = 'none';
           scannerView.style.display = 'block';
           scannerActive = true;
-          framesEstables = 0;
+          accumulatedFrames = [];
+
+          const progBar = document.getElementById('scanner-progress-bar');
+          if (progBar) progBar.style.width = '0%';
 
           try {
             faceMesh = new FaceMesh({
@@ -446,20 +617,56 @@ const Screens = {
               drawConnectors(ctx, landmarks, FACEMESH_FACE_OVAL,    { color: '#FE0182',   lineWidth: 1.5 });
             }
 
-            framesEstables++;
-            if (framesEstables > 30) {
-              scannerText.textContent = '✨ ¡Perfecto! Analizando...';
-              scannerText.style.color = '#4CAF82';
+            accumulatedFrames.push(landmarks);
+            const count = accumulatedFrames.length;
+            const progressPercent = Math.min(100, Math.round((count / 30) * 100));
+
+            const progBar = document.getElementById('scanner-progress-bar');
+            if (progBar) {
+              progBar.style.width = `${progressPercent}%`;
             }
-            if (framesEstables > 55) {
+
+            if (count < 10) {
+              scannerText.textContent = `Estabilizando rostro... ${progressPercent}%`;
+              scannerText.style.color = '#FE0182';
+            } else if (count < 25) {
+              scannerText.textContent = `Analizando textura y zonas... ${progressPercent}%`;
+              scannerText.style.color = '#FE0182';
+            } else if (count < 30) {
+              scannerText.textContent = `Calculando métricas... ${progressPercent}%`;
+              scannerText.style.color = '#4CAF82';
+            } else {
+              scannerText.textContent = '✨ ¡Análisis completado!';
+              scannerText.style.color = '#4CAF82';
               scannerActive = false;
               if (camera) camera.stop();
-              const diagnostico = analyzeFromLandmarks(landmarks);
+
+              // Compute average landmarks
+              const avgLandmarks = [];
+              const numFrames = accumulatedFrames.length;
+              for (let i = 0; i < 468; i++) {
+                let sumX = 0, sumY = 0, sumZ = 0;
+                for (let f = 0; f < numFrames; f++) {
+                  sumX += accumulatedFrames[f][i].x;
+                  sumY += accumulatedFrames[f][i].y;
+                  sumZ += accumulatedFrames[f][i].z || 0;
+                }
+                avgLandmarks.push({
+                  x: sumX / numFrames,
+                  y: sumY / numFrames,
+                  z: sumZ / numFrames
+                });
+              }
+
+              const diagnostico = analyzeFromLandmarks(avgLandmarks, store.state.perfilUsuario);
               store.setState({ diagnostico });
               setTimeout(() => router.navigate('/procesando'), 800);
             }
           } else {
-            framesEstables = 0;
+            // Reset if face is lost
+            accumulatedFrames = [];
+            const progBar = document.getElementById('scanner-progress-bar');
+            if (progBar) progBar.style.width = '0%';
             scannerText.textContent = 'Mantén tu rostro en el óvalo...';
             scannerText.style.color = 'white';
           }
@@ -545,34 +752,67 @@ const Screens = {
           <button onclick="router.navigate('/')" class="btn-primary">Volver al inicio</button>
         </div>`;
 
-      // ── Diagnóstico card
+      // ── Diagnóstico card: "Tu perfil de piel"
       const diagHTML = `
-        <div class="card fade-in">
-          <h3 style="color:var(--color-primary); margin-bottom:18px;">✦ Diagnóstico ARI</h3>
-          <div class="diag-row">
-            <span class="diag-label">Tipo de piel</span>
-            <span class="diag-value">${(diag.tipoPielDetectado || 'N/A').toUpperCase()}</span>
+        <div class="card fade-in" style="background: linear-gradient(135deg, var(--color-primary-light), #FCE4F1); border: 1.5px solid var(--color-primary);">
+          <h3 style="color:var(--color-primary); margin-bottom:8px;">🌸 Tu Perfil de Piel</h3>
+          <p style="font-size:1.15em; font-weight:700; margin: 4px 0 12px; color:var(--color-primary-dark);">
+            Tipo: ${(diag.tipoPielDetectado || 'N/A').toUpperCase()} (${rut.codigoBaumann || 'N/A'})
+          </p>
+
+          <!-- SVG Explanatory Graphs -->
+          <div style="display:flex; justify-content:space-around; align-items:center; margin: 15px 0;">
+            <!-- Hydration Circle -->
+            <div style="text-align:center;">
+              <svg width="65" height="65" viewBox="0 0 36 36">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E2E8F0" stroke-width="3"/>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#34D399" stroke-width="3" stroke-dasharray="${diag.nivelHidratacion || 50}, 100"/>
+                <text x="18" y="20.5" font-family="Poppins" font-size="7.5" font-weight="700" fill="#065F46" text-anchor="middle">${diag.nivelHidratacion || 50}%</text>
+              </svg>
+              <div style="font-size:0.75em; font-weight:600; margin-top:4px; color:var(--color-text);">Hidratación</div>
+            </div>
+            
+            <!-- Luminosity Circle -->
+            <div style="text-align:center;">
+              <svg width="65" height="65" viewBox="0 0 36 36">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E2E8F0" stroke-width="3"/>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#FBBF24" stroke-width="3" stroke-dasharray="${diag.indiceLuminosidad || 50}, 100"/>
+                <text x="18" y="20.5" font-family="Poppins" font-size="7.5" font-weight="700" fill="#92400E" text-anchor="middle">${diag.indiceLuminosidad || 50}%</text>
+              </svg>
+              <div style="font-size:0.75em; font-weight:600; margin-top:4px; color:var(--color-text);">Luminosidad</div>
+            </div>
+
+            <!-- Tono Circle -->
+            <div style="text-align:center;">
+              <svg width="65" height="65" viewBox="0 0 36 36">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E2E8F0" stroke-width="3"/>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#60A5FA" stroke-width="3" stroke-dasharray="${diag.homogeneidadTono === 'Alta' ? 100 : diag.homogeneidadTono === 'Media' ? 66 : 33}, 100"/>
+                <text x="18" y="20.5" font-family="Poppins" font-size="7" font-weight="700" fill="#1E40AF" text-anchor="middle">${diag.homogeneidadTono || 'Media'}</text>
+              </svg>
+              <div style="font-size:0.75em; font-weight:600; margin-top:4px; color:var(--color-text);">Tono</div>
+            </div>
           </div>
-          <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:6px;">
-            <div style="display:flex; justify-content:space-between; width:100%;">
-              <span class="diag-label">💧 Hidratación</span>
-              <span class="diag-value">${diag.nivelHidratacion}%</span>
-            </div>
-            <div class="progress-container" style="margin:0;">
-              <div class="progress-bar" style="width:${diag.nivelHidratacion}%;"></div>
-            </div>
+
+          <div style="font-size:0.82em; color:var(--color-text-soft); line-height:1.45; border-top:1.5px solid rgba(254,1,130,0.15); padding-top:8px; margin-top:8px;">
+            <div>• <strong>Subtono:</strong> ${diag.subtono || 'Neutro'}</div>
+            <div>• <strong>Zonas de atención:</strong> ${(diag.zonasPreocupacion || []).join(', ') || 'Frente y mejillas'}</div>
           </div>
-          <div class="diag-row" style="flex-direction:column; align-items:flex-start; gap:6px; border-bottom:none;">
-            <div style="display:flex; justify-content:space-between; width:100%;">
-              <span class="diag-label">✨ Luminosidad</span>
-              <span class="diag-value">${diag.indiceLuminosidad}%</span>
-            </div>
-            <div class="progress-container" style="margin:0;">
-              <div class="progress-bar" style="width:${diag.indiceLuminosidad}%;"></div>
-            </div>
+          
+          <button class="btn-secondary" id="btn-why-products" style="margin-top:10px; font-size:0.85em; width:100%; border-color: var(--color-primary); color: var(--color-primary); background: transparent;">
+            ❓ ¿Por qué estos productos?
+          </button>
+          
+          <div id="explanation-box" style="display:none; margin-top:12px; padding:12px; border-radius:12px; background:rgba(255,255,255,0.7); border: 1px dashed var(--color-primary); font-size:0.82em; line-height:1.45; color:var(--color-text);">
+            <strong>Explicación de tu prescripción personalizada:</strong><br>
+            • El <strong>Limpiador</strong> purifica manteniendo la barrera cutánea sana.<br>
+            • El <strong>Tratamiento/Sérum</strong> introduce activos de alta eficacia contra tus principales inquietudes.<br>
+            • La <strong>Hidratante</strong> sella la humedad y previene la tirantez.<br>
+            • El <strong>Protector Solar</strong> bloquea la radiación UV previniendo envejecimiento prematuro y manchas.<br>
+            • Todos los productos están alineados con tu código Baumann <strong>${rut.codigoBaumann}</strong> y presupuesto <strong>${store.state.perfilUsuario.presupuesto === 'bajo' ? 'Básico (< S/ 50)' : store.state.perfilUsuario.presupuesto === 'medio' ? 'Moderado (S/ 50 - S/ 120)' : 'Premium'}</strong>.
           </div>
-          <p class="caption" style="margin:14px 0 0; text-align:center; padding-top:12px; border-top:1px solid rgba(0,0,0,0.05);">
-            ⚠️ Análisis orientativo. No reemplaza diagnóstico dermatológico profesional.
+          
+          <p class="caption" style="margin:14px 0 0; text-align:center; padding-top:12px; border-top:1px solid rgba(0,0,0,0.05); font-size: 0.72em;">
+            ⚠️ Análisis orientativo de Aruma. No reemplaza un diagnóstico médico.
           </p>
         </div>
       `;
@@ -586,7 +826,7 @@ const Screens = {
         </div>
       ` : '';
 
-      // ── Separar productos en AM, PM, AMPM
+      // ── Separar productos en AM, PM, AMPM y numerar los pasos
       const productos = rut.rutina || [];
       const amProds   = productos.filter(p => {
         const t = getRoutineTime(p.pasoRutina);
@@ -601,16 +841,15 @@ const Screens = {
       let pmHTML = '';
       
       if (!productos || productos.length === 0) {
-        // Task 12: Empty state fallback
         const fallback = PRODUCTOS_CATALOGO.filter(p => p.apto_para_todos);
         const fbAm = fallback.filter(p => getRoutineTime(p.pasoRutina) !== 'PM').slice(0, 2);
         const fbPm = fallback.filter(p => getRoutineTime(p.pasoRutina) !== 'AM').slice(0, 2);
-        amHTML = fbAm.map(p => renderCompactCard(p, 'am')).join('');
-        pmHTML = fbPm.map(p => renderCompactCard(p, 'pm')).join('');
+        amHTML = fbAm.map((p, idx) => renderCompactCard(p, 'am', idx + 1)).join('');
+        pmHTML = fbPm.map((p, idx) => renderCompactCard(p, 'pm', idx + 1)).join('');
         amHTML += `<p class="caption warning-text" style="padding:8px;">No encontramos compatibilidad perfecta. Recomendamos estos productos suaves.</p>`;
       } else {
-        amHTML = amProds.map(p => renderCompactCard(p, 'am')).join('');
-        pmHTML = pmProds.map(p => renderCompactCard(p, 'pm')).join('');
+        amHTML = amProds.map((p, idx) => renderCompactCard(p, 'am', idx + 1)).join('');
+        pmHTML = pmProds.map((p, idx) => renderCompactCard(p, 'pm', idx + 1)).join('');
       }
 
       const rutinaHTML = `
@@ -632,10 +871,10 @@ const Screens = {
 
       // ── Upsell
       const upsellHTML = rut.upsellSugerencia ? `
-        <div class="upsell-card fade-in">
-          <h4>🎁 ¡Cerca del envío gratis!</h4>
-          <p class="caption">Agrega <strong>${rut.upsellSugerencia.nombre}</strong> para activar tu bolsa de muestras y envío gratuito.</p>
-          <button class="btn-secondary add-to-cart" data-id="${rut.upsellSugerencia.id}" style="font-size:0.85em; padding:10px 20px; margin-top:8px;">
+        <div class="upsell-card fade-in" style="background:rgba(254,1,130,0.03); border:1.5px dashed var(--color-primary); border-radius:16px; padding:16px; margin: 12px 0;">
+          <h4 style="margin:0 0 4px; color:var(--color-primary);">🎁 ¡Cerca del envío gratis!</h4>
+          <p class="caption" style="margin:0 0 8px;">Agrega <strong>${rut.upsellSugerencia.nombre}</strong> para activar tu bolsa de muestras y envío gratuito.</p>
+          <button class="btn-secondary add-to-cart" data-id="${rut.upsellSugerencia.id}" style="font-size:0.85em; padding:10px 20px; margin-top:4px; width:100%;">
             + Agregar por S/ ${rut.upsellSugerencia.precio.toFixed(2)}
           </button>
         </div>
@@ -660,6 +899,16 @@ const Screens = {
 
     init: () => {
       if (window.lucide) lucide.createIcons();
+
+      // Bind explanation toggle
+      const explainBtn = document.getElementById('btn-why-products');
+      const explainBox = document.getElementById('explanation-box');
+      if (explainBtn && explainBox) {
+        explainBtn.addEventListener('click', () => {
+          const isHidden = explainBox.style.display === 'none';
+          explainBox.style.display = isHidden ? 'block' : 'none';
+        });
+      }
 
       document.querySelectorAll('.add-to-cart').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -687,7 +936,7 @@ const Screens = {
       }, 1500);
 
       // Award points
-      setTimeout(() => store.addMagentaPoints(50), 3000);
+      setTimeout(() => store.addMagentaPoints(50, 'escaner_completado'), 3000);
     }
   },
 
@@ -709,7 +958,7 @@ const Screens = {
       const timeTag = time === 'AM'   ? '<span class="tag-am">☀️ Mañana (AM)</span>'
                     : time === 'PM'   ? '<span class="tag-pm">🌙 Noche (PM)</span>'
                     :                   '<span class="tag-ampm">☀️🌙 AM & PM</span>';
-      const badges  = prod.ingredientesActivos
+      const badges  = (prod.ingredientesActivos || [])
         .map(i => `<span class="badge" style="margin-right:4px; margin-bottom:6px;">${i}</span>`)
         .join('');
 
@@ -1040,7 +1289,7 @@ const Screens = {
     init: () => {
       if (window.lucide) lucide.createIcons();
       store.setState({ carrito: [] });
-      store.addMagentaPoints(100);
+      store.addMagentaPoints(100, 'compra_completada');
     }
   },
 
@@ -1228,6 +1477,47 @@ const Screens = {
         year: 'numeric', month: 'long', day: 'numeric'
       });
 
+      // Historial de escaneo
+      let lastScanHTML = '';
+      if (profile && profile.last_scan_result) {
+        const scan = profile.last_scan_result;
+        const scanDate = profile.updated_at ? new Date(profile.updated_at).toLocaleDateString() : 'Reciente';
+        lastScanHTML = `
+          <div class="card">
+            <h3 style="font-size:1em; margin-bottom:12px;">🧴 Mi Último Diagnóstico (${scanDate})</h3>
+            <div class="diag-row">
+              <span class="diag-label">Tipo de Piel</span>
+              <span class="diag-value" style="font-weight:700; color:var(--color-primary);">${(scan.tipoPielDetectado || 'N/A').toUpperCase()}</span>
+            </div>
+            <div class="diag-row">
+              <span class="diag-label">💧 Hidratación</span>
+              <span class="diag-value">${scan.nivelHidratacion || 0}%</span>
+            </div>
+            <div class="diag-row">
+              <span class="diag-label">✨ Luminosidad</span>
+              <span class="diag-value">${scan.indiceLuminosidad || 0}%</span>
+            </div>
+            <div class="diag-row" style="border-bottom:none;">
+              <span class="diag-label">Zonas de Atención</span>
+              <span class="diag-value">${(scan.zonasPreocupacion || []).join(', ') || 'General'}</span>
+            </div>
+            <button id="btn-reload-last-scan" class="btn-primary" style="font-size:0.85em; padding:8px 16px; margin-top:10px;">
+              🔄 Cargar Rutina de este Escaneo
+            </button>
+          </div>
+        `;
+      } else {
+        lastScanHTML = `
+          <div class="card" style="text-align:center;">
+            <h3 style="font-size:1em; margin-bottom:12px;">🧴 Mi Último Diagnóstico</h3>
+            <p class="caption">Aún no has guardado ningún diagnóstico de escaneo.</p>
+            <button onclick="router.navigate('/escaneo')" class="btn-secondary" style="font-size:0.85em; padding:8px 16px; margin-top:4px;">
+              📷 Realizar Escaneo con IA
+            </button>
+          </div>
+        `;
+      }
+
       return `
         <div class="fade-in" style="width:100%;">
           <button class="btn-back" onclick="router.navigate('/')">
@@ -1256,6 +1546,8 @@ const Screens = {
               <span class="diag-value" style="font-size:0.82em;">${createdAt}</span>
             </div>
           </div>
+
+          ${lastScanHTML}
 
           <!-- Task 10: Historial de pedidos -->
           <div class="card">
@@ -1300,6 +1592,15 @@ const Screens = {
       if (!store.state.authUser) {
         router.navigate('/login');
         return;
+      }
+
+      // Load last scan reload button
+      const reloadBtn = document.getElementById('btn-reload-last-scan');
+      if (reloadBtn && store.state.authProfile?.last_scan_result) {
+        reloadBtn.addEventListener('click', () => {
+          store.setState({ diagnostico: store.state.authProfile.last_scan_result });
+          router.navigate('/procesando');
+        });
       }
 
       // Load orders
@@ -1363,6 +1664,42 @@ const Screens = {
           showToast('Error: ' + err.message, 'error');
         }
       });
+    }
+  },
+
+  privacy: {
+    render: () => `
+      <div class="card fade-in" style="line-height:1.6;">
+        <button class="btn-back" onclick="router.navigate('/')">
+          <i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Inicio
+        </button>
+        <h2 style="color:var(--color-primary); margin-bottom:12px;">🔒 Política de Privacidad de ARI</h2>
+        <p style="color:var(--color-text-soft); font-size:0.92em; margin-bottom:20px;">
+          En Aruma, la seguridad y la privacidad de tus datos son nuestra máxima prioridad. Aquí te explicamos cómo protegemos tu información:
+        </p>
+
+        <h4 style="margin:16px 0 6px; color:var(--color-text);">1. Análisis Facial 100% Local</h4>
+        <p style="font-size:0.88em; color:var(--color-text-soft); margin-top:0;">
+          El escáner de rostro utiliza <strong>MediaPipe FaceMesh</strong> ejecutándose localmente en tu propio dispositivo mediante WebAssembly. <strong>Ninguna imagen o video de tu rostro se envía a Internet ni a servidores de terceros</strong>.
+        </p>
+
+        <h4 style="margin:16px 0 6px; color:var(--color-text);">2. Datos Sincronizados de Forma Segura</h4>
+        <p style="font-size:0.88em; color:var(--color-text-soft); margin-top:0;">
+          Si decides registrarte para guardar tu historial, tus preferencias y el diagnóstico resumido de tu piel se guardarán de forma encriptada en la base de datos de <strong>Supabase</strong>. Nadie más tiene acceso a tus diagnósticos.
+        </p>
+
+        <h4 style="margin:16px 0 6px; color:var(--color-text);">3. Control Total de tus Datos</h4>
+        <p style="font-size:0.88em; color:var(--color-text-soft); margin-top:0;">
+          Puedes editar tu tipo de piel o tu nombre, o bien cerrar tu sesión en cualquier momento desde tu panel de perfil. Si decides darte de baja, tus datos se eliminarán de inmediato.
+        </p>
+
+        <button onclick="router.navigate('/')" class="btn-primary" style="margin-top:20px;">
+          Entendido, Volver al Inicio
+        </button>
+      </div>
+    `,
+    init: () => {
+      if (window.lucide) lucide.createIcons();
     }
   },
 

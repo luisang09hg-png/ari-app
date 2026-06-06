@@ -30,6 +30,23 @@ const store = {
   setState(newState) {
     this.state = { ...this.state, ...newState };
     this.notify();
+
+    if (newState.hasOwnProperty('diagnostico') && newState.diagnostico && this.state.authUser) {
+      sbUpdateProfile(this.state.authUser.id, { last_scan_result: newState.diagnostico })
+        .then(profile => {
+          this.state.authProfile = profile;
+          this.notify();
+          if (typeof showToast === 'function') {
+            showToast('Diagnóstico guardado en tu perfil 🧴', 'success');
+          }
+        })
+        .catch(err => {
+          console.error('Error auto-saving scan result:', err);
+          if (typeof showToast === 'function') {
+            showToast('No se pudo guardar el diagnóstico en la nube.', 'error');
+          }
+        });
+    }
   },
 
   updatePerfil(key, value) {
@@ -127,7 +144,26 @@ const store = {
   },
 
   async addMagentaPoints(points, reason = 'Actividad ARI') {
-    this.setState({ magentaPoints: this.state.magentaPoints + points });
+    let pointsToAdd = points;
+
+    if (this.state.authUser) {
+      try {
+        const { data, error } = await supabase.functions.invoke('add-points', {
+          body: { reason }
+        });
+        if (error) throw error;
+        if (data && data.success) {
+          pointsToAdd = data.points;
+        }
+      } catch (e) {
+        console.warn('Magenta points sync error via Edge Function:', e.message);
+        if (typeof showToast === 'function') {
+          showToast('Error al sincronizar puntos con el servidor.', 'error');
+        }
+      }
+    }
+
+    this.setState({ magentaPoints: this.state.magentaPoints + pointsToAdd });
 
     // Update UI text
     const mpText = document.getElementById('mp-puntos-text');
@@ -140,20 +176,7 @@ const store = {
 
     // Float animation
     if (window.showPointsFloat) {
-      window.showPointsFloat(points);
-    }
-
-    // ── Persist to Supabase (Task 7) ──
-    if (this.state.authUser) {
-      try {
-        await supabase.from('magenta_points').insert({
-          user_id: this.state.authUser.id,
-          points: points,
-          reason: reason
-        });
-      } catch (e) {
-        console.warn('Magenta points sync error:', e.message);
-      }
+      window.showPointsFloat(pointsToAdd);
     }
   }
 };

@@ -7,10 +7,12 @@ const router = {
     '/escaneo': Screens.scanner,
     '/procesando': Screens.processing,
     '/resultados': Screens.results,
+    '/catalogo': Screens.catalog,
     '/finalizar': Screens.checkout,
     '/gracias': Screens.thanks,
     '/login': Screens.auth,
-    '/perfil': Screens.profile
+    '/perfil': Screens.profile,
+    '/privacidad': Screens.privacy
   },
 
   navigate(path) {

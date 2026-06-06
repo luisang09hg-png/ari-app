@@ -5,9 +5,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Lucide Icons
   if (window.lucide) lucide.createIcons();
 
-  // ── Header: Dark Mode & A11Y
-  document.getElementById('toggle-dark').addEventListener('click', () => store.toggleDarkMode());
-  document.getElementById('toggle-a11y').addEventListener('click', () => store.toggleA11y());
+  // ── Header: Dark Mode & A11Y & Navigation
+  document.getElementById('toggle-dark')?.addEventListener('click', () => store.toggleDarkMode());
+  document.getElementById('toggle-a11y')?.addEventListener('click', () => store.toggleA11y());
+  document.getElementById('btn-catalogo')?.addEventListener('click', () => router.navigate('/catalogo'));
+  document.getElementById('btn-home')?.addEventListener('click', () => window.location.hash='#/');
+  document.getElementById('cart-btn')?.addEventListener('click', () => router.navigate('/finalizar'));
 
   // ── Widget: Magenta Points
   const magentaWidget = document.getElementById('magenta-points-widget');
@@ -40,8 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
   chatToggleBtn.addEventListener('click', toggleChat);
   chatCloseBtn.addEventListener('click', () => chatWidget.classList.add('collapsed'));
 
-  // Placeholder para la API Key de Claude
-  const CLAUDE_API_KEY = 'YOUR_ANTHROPIC_API_KEY_HERE';
+  // Claude API Proxy (Edge Function)
 
   const appendMessage = (text, type = 'user-msg') => {
     const msgs = document.getElementById('chat-messages');
@@ -75,12 +77,18 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // Task 6: Free text input to Claude
+  // Task 6: Free text input to Claude via Proxy + Rate limiting
+  let claudeTimeout = null;
+  let isLoadingClaude = false;
+
   const sendToClaude = async (userText) => {
+    if (isLoadingClaude) return;
+    
+    // UI update before debounce
     appendMessage(userText, 'user-msg');
     const input = document.getElementById('chat-free-input');
     input.value = '';
-    
+
     const msgs = document.getElementById('chat-messages');
     const typingDiv = document.createElement('div');
     typingDiv.className = 'chat-msg ai-msg fade-in';
@@ -89,41 +97,52 @@ document.addEventListener('DOMContentLoaded', () => {
     msgs.appendChild(typingDiv);
     msgs.scrollTop = msgs.scrollHeight;
 
-    if (CLAUDE_API_KEY === 'YOUR_ANTHROPIC_API_KEY_HERE') {
-      setTimeout(() => {
-        typingDiv.remove();
-        appendMessage('¡Hola! Soy ARI. (Nota: Para respuestas libres, debes configurar tu Claude API Key en app.js).', 'ai-msg');
-      }, 1000);
-      return;
-    }
+    if (claudeTimeout) clearTimeout(claudeTimeout);
+    
+    const btnSend = document.getElementById('btn-send-chat');
+    if (btnSend) btnSend.disabled = true;
+    isLoadingClaude = true;
 
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: {
-          'x-api-key': CLAUDE_API_KEY,
-          'anthropic-version': '2023-06-01',
-          'anthropic-dangerously-allow-browser': 'true',
-          'content-type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'claude-3-sonnet-20240229',
-          max_tokens: 250,
-          system: 'Eres ARI, la experta asistente de belleza de Aruma. Eres amigable, respondes en español peruano, y das consejos breves (máximo 3 líneas) sobre dermocosmética y rutinas.',
-          messages: [{ role: 'user', content: userText }]
-        })
-      });
-      
-      if (!response.ok) throw new Error('API Error');
-      const data = await response.json();
-      
-      typingDiv.remove();
-      appendMessage(data.content[0].text, 'ai-msg');
-    } catch (err) {
-      typingDiv.remove();
-      console.error('Claude API Error:', err);
-      appendMessage('Uy, tuve un pequeño problema técnico. ¿Puedes intentarlo de nuevo?', 'ai-msg');
-    }
+    claudeTimeout = setTimeout(async () => {
+      try {
+        // Build headers — include auth if user is logged in
+        const headers = { 'content-type': 'application/json' };
+        try {
+          const session = (await supabase.auth.getSession()).data?.session;
+          if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+        } catch (_) { /* no-op: auth is optional for chat */ }
+
+        const response = await fetch('https://copqlbydujqhgomtwpfi.supabase.co/functions/v1/ari-chat', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ message: userText })
+        });
+        
+        const data = await response.json();
+
+        typingDiv.remove();
+
+        if (!response.ok || data.error) {
+          const errMsg = data?.error || 'Error desconocido';
+          console.error('Claude API Error:', errMsg);
+          appendMessage('Uy, tuve un pequeño problema técnico. ¿Puedes intentarlo de nuevo?', 'ai-msg');
+        } else {
+          const text = data?.content?.[0]?.text;
+          if (text) {
+            appendMessage(text, 'ai-msg');
+          } else {
+            appendMessage('No pude generar una respuesta. Intenta con otra pregunta.', 'ai-msg');
+          }
+        }
+      } catch (err) {
+        typingDiv.remove();
+        console.error('Claude API Error:', err);
+        appendMessage('Uy, tuve un pequeño problema técnico. ¿Puedes intentarlo de nuevo?', 'ai-msg');
+      } finally {
+        isLoadingClaude = false;
+        if (btnSend) btnSend.disabled = false;
+      }
+    }, 1500); // 1.5s debounce
   };
 
   const chatInput = document.getElementById('chat-free-input');
@@ -165,4 +184,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ── Init Supabase Auth state
   if (typeof initAuth === 'function') initAuth();
+
+  // ── Register Service Worker
+  if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+  }
 });

@@ -29,9 +29,7 @@ async function sbSignUp(email, password, fullName, skinType) {
 }
 
 async function sbSignIn(email, password) {
-  const { data, error } = await supabase.auth.signIn
-    ? await supabase.auth.signIn({ email, password })
-    : await supabase.auth.signInWithPassword({ email, password });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) throw error;
   return data;
 }
@@ -57,9 +55,16 @@ async function sbGetProfile(userId) {
 }
 
 async function sbUpdateProfile(userId, updates) {
+  const allowedKeys = ['full_name', 'skin_type', 'last_scan_result'];
+  const filteredUpdates = {};
+  for (const key of allowedKeys) {
+    if (key in updates) {
+      filteredUpdates[key] = updates[key];
+    }
+  }
   const { data, error } = await supabase
     .from('profiles')
-    .update({ ...updates, updated_at: new Date().toISOString() })
+    .update({ ...filteredUpdates, updated_at: new Date().toISOString() })
     .eq('id', userId)
     .select()
     .single();
@@ -189,6 +194,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
 // ── Update Header UI based on auth state ──
 function updateAuthUI() {
   const authBtn = document.getElementById('auth-btn');
+  const appFooter = document.getElementById('app-footer');
   if (!authBtn) return;
 
   const user = store.state.authUser;
@@ -200,11 +206,17 @@ function updateAuthUI() {
     authBtn.innerHTML = `<span class="auth-avatar">${initial}</span>`;
     authBtn.title = name;
     authBtn.onclick = () => router.navigate('/perfil');
+    if (appFooter) {
+      appFooter.textContent = 'Sesión iniciada. Tus datos de escaneo y preferencias están sincronizados de forma segura.';
+    }
   } else {
     authBtn.innerHTML = '<i data-lucide="user" style="width:18px;height:18px;"></i>';
     authBtn.title = 'Iniciar Sesión';
     authBtn.onclick = () => router.navigate('/login');
     if (window.lucide) lucide.createIcons();
+    if (appFooter) {
+      appFooter.textContent = 'Análisis local · Regístrate para guardar tu historial de forma segura';
+    }
   }
 }
 

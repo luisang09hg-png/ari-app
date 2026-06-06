@@ -1,6 +1,7 @@
 const http = require('http');
 const fs   = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const root = path.join(__dirname);
 
 const mime = {
@@ -25,14 +26,28 @@ http.createServer((req, res) => {
   }
 
   try {
-    const data = fs.readFileSync(filePath);
+    let data = fs.readFileSync(filePath);
     const ext  = path.extname(filePath).slice(1);
+    
+    let cspNonce = '';
+    if (ext === 'html' || urlPath === '/index.html') {
+      cspNonce = crypto.randomBytes(16).toString('base64');
+      let htmlString = data.toString('utf8');
+      htmlString = htmlString.replace(/<script /g, `<script nonce="${cspNonce}" `);
+      htmlString = htmlString.replace(/<script>/g, `<script nonce="${cspNonce}">`);
+      data = Buffer.from(htmlString, 'utf8');
+    }
+
+    const csp = cspNonce 
+      ? `default-src 'self'; script-src 'self' 'nonce-${cspNonce}' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; media-src 'self' blob:; frame-src 'none';`
+      : `default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; media-src 'self' blob:; frame-src 'none';`;
+
     res.writeHead(200, {
       'Content-Type': mime[ext] || 'text/plain',
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
       'X-XSS-Protection': '1; mode=block',
-      'Content-Security-Policy': "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://api.anthropic.com; media-src 'self' blob:; frame-src 'none';",
+      'Content-Security-Policy': csp,
       'Permissions-Policy': 'camera=(self)',
       'Strict-Transport-Security': 'max-age=31536000; includeSubDomains'
     });

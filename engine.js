@@ -20,19 +20,46 @@ function determinarBaumann(perfil) {
   return `${letra1}${letra2}${letra3}${letra4}`;
 }
 
+function getCalificacion(prod) {
+  const brandRatings = {
+    'isdin': 4.9,
+    'la roche-posay': 4.8,
+    'eucerin': 4.8,
+    'bioderma': 4.7,
+    'cerave': 4.7,
+    'vichy': 4.6,
+    'avène': 4.6,
+    'cosrx': 4.6,
+    'skin1004': 4.5,
+    'hada labo': 4.5,
+    'some by mi': 4.4,
+    'cetaphil': 4.4,
+    'neutrogena': 4.2,
+    'garnier': 4.1,
+    'nivea': 4.0
+  };
+  const brand = (prod.marca || '').toLowerCase();
+  return brandRatings[brand] || 4.5;
+}
+
 function generarRutina(perfil) {
   const codigoBaumann = determinarBaumann(perfil);
   
-  // Filtrar productos compatibles con el tipo de piel Baumann o que sean aptos para todos
-  const candidatos = PRODUCTOS_CATALOGO.filter(p => 
-    p.apto_para_todos || (p.filtro_baumann && p.filtro_baumann.includes(codigoBaumann))
+  // ── Filtro de presupuesto estricto basado en categorías ──
+  const limitePrecio = perfil.presupuesto === 'bajo' ? 50 
+                     : perfil.presupuesto === 'medio' ? 120 
+                     : Infinity;
+
+  // Filtrar productos compatibles con el tipo de piel Baumann o aptos para todos, Y bajo el límite de precio
+  let candidatos = PRODUCTOS_CATALOGO.filter(p => 
+    (p.apto_para_todos || (p.filtro_baumann && p.filtro_baumann.includes(codigoBaumann))) &&
+    (p.precio < limitePrecio)
   );
 
   let rutina = [];
   let costoTotal = 0;
   let ingredientesUsados = new Set();
   
-  // Mapear compatibilidad / evitar duplicación de activos (muy simple por nombre)
   const hasIncompatibility = (nuevoActivo) => {
     if (!nuevoActivo) return false;
     for (const inc of INCOMPATIBILIDADES) {
@@ -49,7 +76,22 @@ function generarRutina(perfil) {
 
   // Seleccionar 1 producto por cada una de las 5 fases
   for (let fase = 1; fase <= 5; fase++) {
-    const productosFase = candidatos.filter(p => p.fase === fase);
+    let productosFase = candidatos.filter(p => p.fase === fase);
+    
+    // Fallback: si no hay productos bajo el presupuesto en esta fase, buscamos en todo el catálogo compatible para esa fase
+    if (productosFase.length === 0) {
+      productosFase = PRODUCTOS_CATALOGO.filter(p => p.fase === fase && (p.apto_para_todos || (p.filtro_baumann && p.filtro_baumann.includes(codigoBaumann))));
+    }
+
+    // Ordenar por relación calidad-precio (mayor calificacion/precio desc, luego mayor calificacion desc)
+    productosFase.sort((a, b) => {
+      const ratioA = getCalificacion(a) / (a.precio || 1);
+      const ratioB = getCalificacion(b) / (b.precio || 1);
+      if (Math.abs(ratioA - ratioB) < 0.0001) {
+        return getCalificacion(b) - getCalificacion(a);
+      }
+      return ratioB - ratioA;
+    });
     
     // Buscar uno que no genere incompatibilidad
     let seleccionado = null;
@@ -60,32 +102,34 @@ function generarRutina(perfil) {
       }
     }
     
-    // Fallback: si todos son incompatibles (raro), forzamos el primero
+    // Fallback: si todos son incompatibles (raro), forzamos el primero (que es el mejor calificado-precio)
     if (!seleccionado && productosFase.length > 0) {
         seleccionado = productosFase[0];
     }
 
     if (seleccionado) {
-      // Ajustar atributos legacy para compatibilidad con la vista
-      seleccionado.categoria = fase === 1 ? 'limpieza' : 
-                               fase === 5 ? 'proteccion_solar' : 
-                               fase === 4 ? 'hidratacion' : 'tratamiento';
+      // Clona el producto para no mutar el catálogo global
+      const clonado = { ...seleccionado };
+      clonado.categoria = fase === 1 ? 'limpieza' : 
+                          fase === 5 ? 'proteccion_solar' : 
+                          fase === 4 ? 'hidratacion' : 'tratamiento';
                                
-      rutina.push(seleccionado);
-      costoTotal += (seleccionado.precio || 0);
-      if (seleccionado.ingrediente_activo) {
-        ingredientesUsados.add(seleccionado.ingrediente_activo);
+      rutina.push(clonado);
+      costoTotal += (clonado.precio || 0);
+      if (clonado.ingrediente_activo) {
+        ingredientesUsados.add(clonado.ingrediente_activo);
       }
     }
   }
 
-  // ── Upsell: buscar producto compatible que NO esté en la rutina, precio < S/80
+  // ── Upsell: buscar producto compatible que NO esté en la rutina, precio < S/80 y que cumpla el presupuesto
   const idsEnRutina = new Set(rutina.map(p => p.id));
   const upsellCandidatos = PRODUCTOS_CATALOGO.filter(p =>
     !idsEnRutina.has(p.id) &&
     p.precio < 80 &&
     p.precio > 15 &&
-    (p.apto_para_todos || (p.filtro_baumann && p.filtro_baumann.includes(codigoBaumann)))
+    (p.apto_para_todos || (p.filtro_baumann && p.filtro_baumann.includes(codigoBaumann))) &&
+    (p.precio < limitePrecio)
   );
   // Pick the one closest to S/80 to maximize perceived value
   const upsellSugerencia = upsellCandidatos.length > 0
@@ -103,10 +147,10 @@ function generarRutina(perfil) {
 }
 
 // ── Análisis facial real basado en 468 landmarks de MediaPipe FaceMesh ──
-function analyzeFromLandmarks(landmarks) {
+function analyzeFromLandmarks(landmarks, perfilUsuario) {
   if (!landmarks || landmarks.length < 468) {
     return {
-      tipoPielDetectado: 'normal',
+      tipoPielDetectado: (perfilUsuario && perfilUsuario.tipoPiel) || 'normal',
       nivelHidratacion: 65,
       homogeneidadTono: 'Media',
       subtono: 'Cálido (Warm)',
@@ -124,39 +168,24 @@ function analyzeFromLandmarks(landmarks) {
     return Math.sqrt(dx * dx + dy * dy + dz * dz);
   };
 
-  // ── Helper: punto medio ──
-  const midY = (a, b) => (landmarks[a].y + landmarks[b].y) / 2;
-  const midX = (a, b) => (landmarks[a].x + landmarks[b].x) / 2;
-
   // ═══ 1. Dimensiones generales del rostro ═══
-  // Anchura: landmark 234 (mejilla izq) ↔ 454 (mejilla der)
   const faceWidth = dist(234, 454);
-  // Altura: landmark 10 (frente top) ↔ 152 (mentón)
   const faceHeight = dist(10, 152);
-  // Ratio W/H — caras más anchas tienden a tener más área de zona T
   const faceRatio = faceWidth / (faceHeight || 0.001);
 
   // ═══ 2. Zona T (frente + nariz) ═══
-  // Frente: puntos 10, 151, 9, 8, 168 (línea media vertical superior)
-  // Nariz: 1 (punta), 2 (puente), 168 (entre cejas)
-  const foreheadHeight = dist(10, 168); // de la línea de pelo a entrecejo
-  const noseLength = dist(168, 1);      // de entrecejo a punta de nariz
+  const foreheadHeight = dist(10, 168);
+  const noseLength = dist(168, 1);
   const zonaTLength = foreheadHeight + noseLength;
   const zonaTRatio = zonaTLength / (faceHeight || 0.001);
 
-  // Anchura de nariz: landmarks 129 (ala izq) ↔ 358 (ala der)
-  const noseWidth = dist(129, 358);
-  const noseRatioToFace = noseWidth / (faceWidth || 0.001);
-
-  // ═══ 3. Mejillas — tono y amplitud ═══
-  // Distancia de mejillas al centro facial
-  const centerX = landmarks[1].x; // punta de nariz como referencia central
+  // ═══ 3. Mejillas — contorno y asimetría ═══
+  const centerX = landmarks[1].x;
   const cheekLeftDist = Math.abs(landmarks[234].x - centerX);
   const cheekRightDist = Math.abs(landmarks[454].x - centerX);
   const cheekAsymmetry = Math.abs(cheekLeftDist - cheekRightDist) / (faceWidth || 0.001);
 
   // ═══ 4. Zona periocular ═══
-  // Apertura ocular: landmarks 159/145 (ojo izq superior/inferior)
   const eyeOpenL = dist(159, 145);
   const eyeOpenR = dist(386, 374);
   const eyeAvg = (eyeOpenL + eyeOpenR) / 2;
@@ -167,7 +196,6 @@ function analyzeFromLandmarks(landmarks) {
   const jawToFace = jawWidth / (faceWidth || 0.001);
 
   // ═══ 6. Simetría global ═══
-  // Comparar distancias simétricas (izq vs der)
   const symPairs = [[234, 454], [129, 358], [159, 386], [145, 374], [172, 397]];
   let symScore = 0;
   for (const [l, r] of symPairs) {
@@ -179,54 +207,155 @@ function analyzeFromLandmarks(landmarks) {
   symScore = Math.max(50, Math.min(100, symScore));
 
   // ═══ CLASIFICACIÓN DE TIPO DE PIEL ═══
-  let tipoPielDetectado;
-  let zonasPreocupacion = [];
-
-  // Heurísticas basadas en distribución geométrica facial:
-  // - Zona T amplia (ratio > 0.52) + nariz ancha → tendencia grasa
-  // - Cara estrecha (ratio < 0.60) + zona T corta → tendencia seca
-  // - Asimetría alta (> 0.05) → posible sensibilidad
-  // - Ratio cara balanceado + buena simetría → normal
-  // - Mezcla de indicadores → mixta
-
+  // 1. Probabilidades geométricas (landmarks 30%)
   const isZonaTWide = zonaTRatio > 0.52;
-  const isNoseWide = noseRatioToFace > 0.25;
   const isFaceNarrow = faceRatio < 0.60;
   const isHighAsymmetry = cheekAsymmetry > 0.05;
-  const isGoodSymmetry = symScore > 85;
-
+  
+  let landmarkProb = { normal: 0.2, grasa: 0.2, mixta: 0.2, seca: 0.2, sensible: 0.2 };
   if (isHighAsymmetry && eyeToFace < 0.03) {
-    tipoPielDetectado = 'sensible';
-    zonasPreocupacion = ['contorno_ojos', 'mejillas'];
-  } else if (isZonaTWide && isNoseWide) {
-    tipoPielDetectado = 'grasa';
-    zonasPreocupacion = ['zona_t', 'nariz', 'frente'];
+    landmarkProb = { normal: 0.1, grasa: 0.1, mixta: 0.1, seca: 0.1, sensible: 0.6 };
+  } else if (isZonaTWide) {
+    landmarkProb = { normal: 0.1, grasa: 0.5, mixta: 0.35, seca: 0.05, sensible: 0 };
   } else if (isFaceNarrow && !isZonaTWide) {
-    tipoPielDetectado = 'seca';
+    landmarkProb = { normal: 0.2, grasa: 0.05, mixta: 0.05, seca: 0.6, sensible: 0.1 };
+  } else {
+    landmarkProb = { normal: 0.6, grasa: 0.1, mixta: 0.15, seca: 0.1, sensible: 0.05 };
+  }
+
+  // 2. Probabilidades del cuestionario (70%)
+  let questProb = { normal: 0.2, grasa: 0.2, mixta: 0.2, seca: 0.2, sensible: 0.2 };
+  if (perfilUsuario) {
+    let qScores = { normal: 0, grasa: 0, mixta: 0, seca: 0, sensible: 0 };
+    let totalQuestionsAnswered = 0;
+
+    const tipo = perfilUsuario.tipoPiel || perfilUsuario.tipoPielMañana;
+    if (tipo) {
+      if (tipo === 'grasa') qScores.grasa += 3;
+      else if (tipo === 'mixta') qScores.mixta += 3;
+      else if (tipo === 'seca') qScores.seca += 3;
+      else if (tipo === 'sensible') qScores.sensible += 3;
+      else if (tipo === 'normal') qScores.normal += 3;
+      totalQuestionsAnswered++;
+    }
+
+    if (perfilUsuario.brillo) {
+      if (perfilUsuario.brillo === 'siempre') qScores.grasa += 2;
+      else if (perfilUsuario.brillo === 'zona_t') qScores.mixta += 2;
+      else if (perfilUsuario.brillo === 'raramente') { qScores.normal += 1; qScores.seca += 1; }
+      else if (perfilUsuario.brillo === 'nunca') qScores.seca += 2;
+      totalQuestionsAnswered++;
+    }
+
+    if (perfilUsuario.poros) {
+      if (perfilUsuario.poros === 'grandes') qScores.grasa += 2;
+      else if (perfilUsuario.poros === 'zona_t') qScores.mixta += 2;
+      else if (perfilUsuario.poros === 'pequenos') { qScores.seca += 1; qScores.normal += 1; }
+      totalQuestionsAnswered++;
+    }
+
+    if (perfilUsuario.textura) {
+      if (perfilUsuario.textura === 'oleosa') qScores.grasa += 2;
+      else if (perfilUsuario.textura === 'desigual') qScores.mixta += 2;
+      else if (perfilUsuario.textura === 'aspera') qScores.seca += 2;
+      else if (perfilUsuario.textura === 'suave') qScores.normal += 2;
+      totalQuestionsAnswered++;
+    }
+
+    if (perfilUsuario.sensibilidad_hoy) {
+      if (perfilUsuario.sensibilidad_hoy === 'si') qScores.sensible += 3;
+      else if (perfilUsuario.sensibilidad_hoy === 'un_poco') { qScores.sensible += 1.5; qScores.seca += 1; }
+      else if (perfilUsuario.sensibilidad_hoy === 'no') qScores.normal += 1;
+      totalQuestionsAnswered++;
+    }
+
+    if (perfilUsuario.reaccion_productos) {
+      if (perfilUsuario.reaccion_productos === 'siempre') qScores.sensible += 3;
+      else if (perfilUsuario.reaccion_productos === 'a_veces') { qScores.sensible += 1; qScores.seca += 1; }
+      else if (perfilUsuario.reaccion_productos === 'raramente') qScores.normal += 2;
+      totalQuestionsAnswered++;
+    }
+
+    if (perfilUsuario.rojez) {
+      if (perfilUsuario.rojez === 'siempre') qScores.sensible += 3;
+      else if (perfilUsuario.rojez === 'moderadamente') { qScores.sensible += 1.5; qScores.seca += 1; }
+      else if (perfilUsuario.rojez === 'raramente') qScores.normal += 2;
+      totalQuestionsAnswered++;
+    }
+
+    if (perfilUsuario.acne_historial) {
+      if (perfilUsuario.acne_historial === 'siempre') { qScores.grasa += 2; qScores.sensible += 0.5; }
+      else if (perfilUsuario.acne_historial === 'a_veces') qScores.mixta += 2;
+      else if (perfilUsuario.acne_historial === 'nunca') { qScores.normal += 1.5; qScores.seca += 1; }
+      totalQuestionsAnswered++;
+    }
+
+    if (totalQuestionsAnswered > 0) {
+      const sum = qScores.normal + qScores.grasa + qScores.mixta + qScores.seca + qScores.sensible;
+      if (sum > 0) {
+        questProb = {
+          normal: qScores.normal / sum,
+          grasa: qScores.grasa / sum,
+          mixta: qScores.mixta / sum,
+          seca: qScores.seca / sum,
+          sensible: qScores.sensible / sum
+        };
+      }
+    }
+  }
+
+  // 3. Ponderación final (70% Cuestionario / 30% Landmarks)
+  const weightQuest = perfilUsuario ? 0.7 : 0.0;
+  const weightLand = perfilUsuario ? 0.3 : 1.0;
+
+  const finalScore = {};
+  const types = ['normal', 'grasa', 'mixta', 'seca', 'sensible'];
+  types.forEach(t => {
+    finalScore[t] = weightQuest * questProb[t] + weightLand * landmarkProb[t];
+  });
+
+  let tipoPielDetectado = 'normal';
+  let maxScore = -1;
+  types.forEach(t => {
+    if (finalScore[t] > maxScore) {
+      maxScore = finalScore[t];
+      tipoPielDetectado = t;
+    }
+  });
+
+  let zonasPreocupacion = [];
+  if (tipoPielDetectado === 'sensible') {
+    zonasPreocupacion = ['contorno_ojos', 'mejillas'];
+  } else if (tipoPielDetectado === 'grasa') {
+    zonasPreocupacion = ['zona_t', 'frente'];
+  } else if (tipoPielDetectado === 'seca') {
     zonasPreocupacion = ['mejillas', 'contorno_ojos'];
-  } else if (isZonaTWide && !isNoseWide) {
-    tipoPielDetectado = 'mixta';
+  } else if (tipoPielDetectado === 'mixta') {
     zonasPreocupacion = ['zona_t', 'mejillas'];
   } else {
-    tipoPielDetectado = 'normal';
     zonasPreocupacion = ['zona_t'];
   }
 
   // ═══ MÉTRICAS DERIVADAS (determinísticas) ═══
-  // Nivel de hidratación estimado: relación entre amplitud de mejillas y contorno
-  const hidratBase = Math.round(50 + (jawToFace * 30) + (isGoodSymmetry ? 15 : 5));
+  // Nivel de hidratación estimado
+  let hidratBase = Math.round(50 + (jawToFace * 30) + (symScore > 85 ? 15 : 5));
+  
+  // Ajuste según respuestas del cuestionario
+  if (perfilUsuario) {
+    if (perfilUsuario.agua === 'poco') hidratBase -= 15;
+    else if (perfilUsuario.agua === 'mucho') hidratBase += 15;
+    
+    if (perfilUsuario.clima === 'seco') hidratBase -= 10;
+    else if (perfilUsuario.clima === 'humedo') hidratBase += 10;
+  }
   const nivelHidratacion = Math.max(35, Math.min(95, hidratBase));
 
-  // Homogeneidad de tono: basada en simetría facial
   const homogeneidadTono = symScore > 88 ? 'Alta' : symScore > 75 ? 'Media' : 'Baja';
 
-  // Subtono: heurística basada en proporción vertical del rostro
-  // Caras con tercio inferior más largo tienden a tonos cálidos
   const lowerThird = dist(1, 152); // nariz a mentón
   const upperThird = dist(10, 168); // frente
   const subtono = (lowerThird / (upperThird || 0.001)) > 1.1 ? 'Cálido (Warm)' : 'Frío (Cool)';
 
-  // Índice de luminosidad: derivado de apertura ocular y simetría
   const lumiBase = Math.round(45 + (eyeToFace * 500) + (symScore * 0.25));
   const indiceLuminosidad = Math.max(40, Math.min(95, lumiBase));
 
@@ -241,8 +370,7 @@ function analyzeFromLandmarks(landmarks) {
     metricas: {
       faceRatio: Math.round(faceRatio * 100) / 100,
       zonaTRatio: Math.round(zonaTRatio * 100) / 100,
-      simetria: symScore,
-      noseRatio: Math.round(noseRatioToFace * 100) / 100
+      simetria: symScore
     }
   };
 }
