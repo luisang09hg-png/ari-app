@@ -38,7 +38,7 @@ function getProductImgSrc(prod) {
 }
 
 // ── Helper: compact product card HTML
-function renderCompactCard(prod, context = '', stepIndex) {
+function renderCompactCard(prod, stepIndex) {
   const imgSrc = getProductImgSrc(prod);
   const emoji  = getStepEmoji(prod.pasoRutina);
   const time   = getRoutineTime(prod.pasoRutina);
@@ -46,7 +46,9 @@ function renderCompactCard(prod, context = '', stepIndex) {
                 : time === 'PM'   ? '<span class="tag-pm">🌙 PM</span>'
                 :                   '<span class="tag-ampm">☀️🌙 AM/PM</span>';
 
-  const stepTag = stepIndex !== undefined ? `<span style="background:var(--color-primary); color:white; font-size:0.7em; font-weight:700; padding:2px 8px; border-radius:10px; margin-right:6px; vertical-align:middle;">Paso ${stepIndex}</span>` : '';
+  const FASE_LABELS = { 1: 'Limpieza', 2: 'Tónico', 3: 'Sérum', 4: 'Hidratante', 5: 'Solar' };
+  const stepLabel = prod.fase ? FASE_LABELS[prod.fase] || `Paso ${stepIndex}` : `Paso ${stepIndex}`;
+  const stepTag = stepIndex !== undefined ? `<span style="background:var(--color-primary); color:white; font-size:0.7em; font-weight:700; padding:2px 8px; border-radius:10px; margin-right:6px; vertical-align:middle;">${stepLabel}</span>` : '';
 
   let modoUso = "Aplicar sobre el rostro limpio.";
   let advertencia = "Para uso externo únicamente.";
@@ -112,14 +114,16 @@ const Screens = {
         <p style="color:var(--color-text-soft); font-size:0.95em;">
           ¡Hola! Soy ARI, tu asistente de belleza de ARUMA. Cuéntame sobre tu piel y te ayudo a encontrar exactamente lo que necesitas.
         </p>
-        <button onclick="router.navigate('/cuestionario')" class="btn-primary">
-          <i data-lucide="clipboard-list" style="margin-right:8px; vertical-align:middle; width:18px;"></i>
-          Iniciar Cuestionario de Piel
-        </button>
-        <button onclick="router.navigate('/escaneo')" class="btn-secondary">
-          <i data-lucide="camera" style="margin-right:8px; vertical-align:middle; width:16px;"></i>
-          Escanear mi Rostro con IA
-        </button>
+        <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
+          <button onclick="router.navigate('/cuestionario')" class="btn-primary" style="width: 100%; padding: 14px 20px; margin: 0;">
+            <i data-lucide="clipboard-list" style="margin-right:8px; vertical-align:middle; width:18px;"></i>
+            Iniciar Cuestionario de Piel
+          </button>
+          <button onclick="router.navigate('/escaneo')" class="btn-secondary" style="width: 100%; padding: 14px 20px; margin: 0;">
+            <i data-lucide="camera" style="margin-right:8px; vertical-align:middle; width:16px;"></i>
+            Escanear mi Rostro con IA
+          </button>
+        </div>
         <p class="caption" style="margin-top:16px;">
           🔒 Sin registro · Sin almacenamiento de datos · Análisis 100% local
         </p>
@@ -328,6 +332,11 @@ const Screens = {
             </div>
           </div>
 
+          <button id="btn-escape-to-scanner" style="width: 100%; border: 1.5px dashed var(--color-primary); background: rgba(254,1,130,0.06); color: var(--color-primary); margin-bottom: 12px; padding: 12px; border-radius: 12px; font-weight: 600; cursor: pointer;">
+            <i data-lucide="camera" style="width:16px;height:16px;vertical-align:middle;margin-right:6px;"></i> No sé / Analizar mi piel con IA &rarr;
+          </button>
+          <p class="caption" style="margin-top:-4px; margin-bottom:16px; text-align:center;">Si no conoces tu tipo de piel, el escáner facial lo detecta automáticamente</p>
+
           ${stepIdx > 0 ? `<button class="btn-back" id="btn-quiz-back"><i data-lucide="arrow-left" style="width:16px;height:16px;"></i> Anterior</button>` : ''}
         </div>
       `;
@@ -339,7 +348,6 @@ const Screens = {
     },
 
     _bindStep(stepIdx) {
-      if (window.lucide) lucide.createIcons();
       const steps = Screens.questionnaire._steps;
       const root  = document.getElementById('app-root');
 
@@ -352,6 +360,11 @@ const Screens = {
           setTimeout(() => Screens.questionnaire._bindStep(prev), 0);
         });
       }
+
+      // Escape button
+      document.getElementById('btn-escape-to-scanner')?.addEventListener('click', () => {
+        router.navigate('/escaneo');
+      });
 
       // Option buttons
       document.querySelectorAll(`#quiz-options-${stepIdx} .quiz-option`).forEach(btn => {
@@ -407,6 +420,8 @@ const Screens = {
           }, 280);
         });
       });
+
+      if (window.lucide) lucide.createIcons();
     }
   },
 
@@ -547,14 +562,17 @@ const Screens = {
             showState('error', '⚠️ Módulo IA no disponible');
             // Fallback: simulate scan with questionnaire data
             setTimeout(() => {
+              const perfil = store.state.perfilUsuario;
+              const hidrat = perfil.agua === 'mucho' ? 82 : perfil.agua === 'poco' ? 48 : 65;
+              const lumino = perfil.tipoPiel === 'grasa' ? 58 : perfil.tipoPiel === 'seca' ? 52 : 70;
               const diag = {
-                tipoPielDetectado: store.state.perfilUsuario.tipoPiel || 'mixta',
-                nivelHidratacion:  Math.round(55 + Math.random() * 30),
-                homogeneidadTono:  'Media',
-                indiceLuminosidad: Math.round(60 + Math.random() * 25),
+                tipoPielDetectado: perfil.tipoPiel || 'mixta',
+                nivelHidratacion:  hidrat,
+                homogeneidadTono:  perfil.manchas_historial === 'si' ? 'Baja' : 'Media',
+                indiceLuminosidad: lumino,
                 subtono:           'Cálido (Warm)',
-                puntosAnalizados:  468,
-                zonasPreocupacion: ['zona_t'],
+                puntosAnalizados:  0,
+                zonasPreocupacion: perfil.tipoPiel === 'grasa' ? ['Zona T (frente y nariz)', 'Frente'] : ['Mejillas'],
                 metodo:            'cuestionario_fallback'
               };
               store.setState({ diagnostico: diag });
@@ -619,21 +637,21 @@ const Screens = {
 
             accumulatedFrames.push(landmarks);
             const count = accumulatedFrames.length;
-            const progressPercent = Math.min(100, Math.round((count / 30) * 100));
+            const progressPercent = Math.min(100, Math.round((count / 45) * 100));
 
             const progBar = document.getElementById('scanner-progress-bar');
             if (progBar) {
               progBar.style.width = `${progressPercent}%`;
             }
 
-            if (count < 10) {
-              scannerText.textContent = `Estabilizando rostro... ${progressPercent}%`;
+            if (count < 15) {
+              scannerText.textContent = `Acércate un poco más · ${progressPercent}%`;
               scannerText.style.color = '#FE0182';
-            } else if (count < 25) {
-              scannerText.textContent = `Analizando textura y zonas... ${progressPercent}%`;
+            } else if (count < 38) {
+              scannerText.textContent = `Analizando poros y textura... ${progressPercent}%`;
               scannerText.style.color = '#FE0182';
-            } else if (count < 30) {
-              scannerText.textContent = `Calculando métricas... ${progressPercent}%`;
+            } else if (count < 45) {
+              scannerText.textContent = `Últimos datos... ¡Casi listo! ${progressPercent}%`;
               scannerText.style.color = '#4CAF82';
             } else {
               scannerText.textContent = '✨ ¡Análisis completado!';
@@ -667,7 +685,13 @@ const Screens = {
             accumulatedFrames = [];
             const progBar = document.getElementById('scanner-progress-bar');
             if (progBar) progBar.style.width = '0%';
-            scannerText.textContent = 'Mantén tu rostro en el óvalo...';
+            const tips = [
+              'Mantén tu rostro en el óvalo...',
+              'Busca buena iluminación frontal',
+              'Aleja un poco el dispositivo',
+              'Evita contraluz detrás de ti'
+            ];
+            scannerText.textContent = tips[Math.floor(Date.now() / 2000) % tips.length];
             scannerText.style.color = 'white';
           }
           ctx.restore();
@@ -791,11 +815,25 @@ const Screens = {
               </svg>
               <div style="font-size:0.75em; font-weight:600; margin-top:4px; color:var(--color-text);">Tono</div>
             </div>
+
+            <!-- Simetría Circle -->
+            <div style="text-align:center;">
+              <svg width="65" height="65" viewBox="0 0 36 36">
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#E2E8F0" stroke-width="3"/>
+                <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="#A78BFA" stroke-width="3"
+                  stroke-dasharray="${diag.metricas?.simetria || 75}, 100"/>
+                <text x="18" y="20.5" font-family="Poppins" font-size="7.5" font-weight="700" fill="#5B21B6" text-anchor="middle">
+                  ${diag.metricas?.simetria || 75}%
+                </text>
+              </svg>
+              <div style="font-size:0.75em; font-weight:600; margin-top:4px; color:var(--color-text);">Simetría</div>
+            </div>
           </div>
 
           <div style="font-size:0.82em; color:var(--color-text-soft); line-height:1.45; border-top:1.5px solid rgba(254,1,130,0.15); padding-top:8px; margin-top:8px;">
             <div>• <strong>Subtono:</strong> ${diag.subtono || 'Neutro'}</div>
             <div>• <strong>Zonas de atención:</strong> ${(diag.zonasPreocupacion || []).join(', ') || 'Frente y mejillas'}</div>
+            <div>• <strong>Recomendaciones clave:</strong> ${(diag.recomendacionesClave || []).join(' · ') || 'Hidratación diaria'}</div>
           </div>
           
           <button class="btn-secondary" id="btn-why-products" style="margin-top:10px; font-size:0.85em; width:100%; border-color: var(--color-primary); color: var(--color-primary); background: transparent;">
@@ -831,11 +869,11 @@ const Screens = {
       const amProds   = productos.filter(p => {
         const t = getRoutineTime(p.pasoRutina);
         return t === 'AM' || t === 'AMPM';
-      });
+      }).sort((a, b) => a.fase - b.fase);
       const pmProds   = productos.filter(p => {
         const t = getRoutineTime(p.pasoRutina);
         return t === 'PM' || t === 'AMPM';
-      });
+      }).sort((a, b) => a.fase - b.fase);
 
       let amHTML = '';
       let pmHTML = '';
@@ -844,12 +882,14 @@ const Screens = {
         const fallback = PRODUCTOS_CATALOGO.filter(p => p.apto_para_todos);
         const fbAm = fallback.filter(p => getRoutineTime(p.pasoRutina) !== 'PM').slice(0, 2);
         const fbPm = fallback.filter(p => getRoutineTime(p.pasoRutina) !== 'AM').slice(0, 2);
-        amHTML = fbAm.map((p, idx) => renderCompactCard(p, 'am', idx + 1)).join('');
-        pmHTML = fbPm.map((p, idx) => renderCompactCard(p, 'pm', idx + 1)).join('');
+        amHTML = fbAm.map((p, idx) => renderCompactCard(p, idx + 1)).join('');
+        pmHTML = fbPm.map((p, idx) => renderCompactCard(p, idx + 1)).join('');
         amHTML += `<p class="caption warning-text" style="padding:8px;">No encontramos compatibilidad perfecta. Recomendamos estos productos suaves.</p>`;
       } else {
-        amHTML = amProds.map((p, idx) => renderCompactCard(p, 'am', idx + 1)).join('');
-        pmHTML = pmProds.map((p, idx) => renderCompactCard(p, 'pm', idx + 1)).join('');
+        amHTML = `<p style="font-size:0.78em; color:var(--color-text-soft); margin:0 0 8px; padding:0 4px;">${amProds.length} productos · En orden de aplicación</p>`
+          + amProds.map((p, idx) => renderCompactCard(p, idx + 1)).join('');
+        pmHTML = `<p style="font-size:0.78em; color:var(--color-text-soft); margin:0 0 8px; padding:0 4px;">${pmProds.length} productos · En orden de aplicación</p>`
+          + pmProds.map((p, idx) => renderCompactCard(p, idx + 1)).join('');
       }
 
       const rutinaHTML = `
@@ -930,13 +970,7 @@ const Screens = {
         });
       });
 
-      // Show chat contextually after 1.5s
-      setTimeout(() => {
-        document.getElementById('ari-chat-widget')?.classList.remove('collapsed');
-      }, 1500);
 
-      // Award points
-      setTimeout(() => store.addMagentaPoints(50, 'escaner_completado'), 3000);
     }
   },
 
@@ -1127,7 +1161,7 @@ const Screens = {
             </button>
           ` : ''}
 
-          <!-- Task 11: Payment Modal -->
+          <!-- Modal de Pago -->
           <div id="payment-modal" class="payment-modal" style="display:none;">
             <div class="payment-overlay" id="payment-overlay"></div>
             <div class="payment-content card fade-in">
@@ -1236,7 +1270,7 @@ const Screens = {
         });
       });
 
-      // Confirm Handlers (Task 10: Create Order)
+      // Confirmar pedido
       const handleConfirm = async (btn) => {
         btn.disabled = true;
         btn.textContent = 'Procesando...';
@@ -1289,7 +1323,6 @@ const Screens = {
     init: () => {
       if (window.lucide) lucide.createIcons();
       store.setState({ carrito: [] });
-      store.addMagentaPoints(100, 'compra_completada');
     }
   },
 
@@ -1501,8 +1534,9 @@ const Screens = {
               <span class="diag-label">Zonas de Atención</span>
               <span class="diag-value">${(scan.zonasPreocupacion || []).join(', ') || 'General'}</span>
             </div>
-            <button id="btn-reload-last-scan" class="btn-primary" style="font-size:0.85em; padding:8px 16px; margin-top:10px;">
-              🔄 Cargar Rutina de este Escaneo
+            <button class="btn-primary" style="font-size:0.85em; padding:8px 16px; margin-top:10px;"
+              onclick="store.setState({ diagnostico: store.state.authProfile?.last_scan_result }); router.navigate('/procesando');">
+              🔄 Recargar mi última rutina
             </button>
           </div>
         `;
@@ -1549,7 +1583,7 @@ const Screens = {
 
           ${lastScanHTML}
 
-          <!-- Task 10: Historial de pedidos -->
+          <!-- Historial de pedidos -->
           <div class="card">
             <h3 style="font-size:1em; margin-bottom:12px;">🛍️ Mis Últimos Pedidos</h3>
             <div id="orders-container">
@@ -1595,13 +1629,6 @@ const Screens = {
       }
 
       // Load last scan reload button
-      const reloadBtn = document.getElementById('btn-reload-last-scan');
-      if (reloadBtn && store.state.authProfile?.last_scan_result) {
-        reloadBtn.addEventListener('click', () => {
-          store.setState({ diagnostico: store.state.authProfile.last_scan_result });
-          router.navigate('/procesando');
-        });
-      }
 
       // Load orders
       sbGetOrders(store.state.authUser.id, 5).then(orders => {
@@ -1704,7 +1731,7 @@ const Screens = {
   },
 
   // ════════════════════════════════════════════════
-  // 11. CATALOG (Task 8)
+  // 11. CATÁLOGO
   // ════════════════════════════════════════════════
   catalog: {
     _state: {
@@ -1766,7 +1793,7 @@ const Screens = {
         results.sort((a, b) => st.sort === 'asc' ? a.precio - b.precio : b.precio - a.precio);
 
         // Limit to 40 for perf
-        const html = results.slice(0, 40).map(p => renderCompactCard(p, '')).join('');
+        const html = results.slice(0, 40).map(p => renderCompactCard(p)).join('');
         const container = document.getElementById('cat-results');
         if (container) {
           container.innerHTML = html || '<p class="caption" style="text-align:center;">No se encontraron productos.</p>';

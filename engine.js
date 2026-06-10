@@ -325,15 +325,15 @@ function analyzeFromLandmarks(landmarks, perfilUsuario) {
 
   let zonasPreocupacion = [];
   if (tipoPielDetectado === 'sensible') {
-    zonasPreocupacion = ['contorno_ojos', 'mejillas'];
+    zonasPreocupacion = ['Contorno de ojos', 'Mejillas'];
   } else if (tipoPielDetectado === 'grasa') {
-    zonasPreocupacion = ['zona_t', 'frente'];
+    zonasPreocupacion = ['Zona T (frente y nariz)', 'Frente'];
   } else if (tipoPielDetectado === 'seca') {
-    zonasPreocupacion = ['mejillas', 'contorno_ojos'];
+    zonasPreocupacion = ['Mejillas', 'Contorno de ojos'];
   } else if (tipoPielDetectado === 'mixta') {
-    zonasPreocupacion = ['zona_t', 'mejillas'];
+    zonasPreocupacion = ['Zona T (frente y nariz)', 'Mejillas'];
   } else {
-    zonasPreocupacion = ['zona_t'];
+    zonasPreocupacion = ['Zona T (frente y nariz)'];
   }
 
   // ═══ MÉTRICAS DERIVADAS (determinísticas) ═══
@@ -354,10 +354,20 @@ function analyzeFromLandmarks(landmarks, perfilUsuario) {
 
   const lowerThird = dist(1, 152); // nariz a mentón
   const upperThird = dist(10, 168); // frente
-  const subtono = (lowerThird / (upperThird || 0.001)) > 1.1 ? 'Cálido (Warm)' : 'Frío (Cool)';
+  let subtono = (lowerThird / (upperThird || 0.001)) > 1.1 ? 'Cálido (Warm)' : 'Frío (Cool)';
+  // Ajuste adicional por clima (el clima cálido/húmedo de Lima → Warm)
+  if (perfilUsuario && perfilUsuario.clima === 'humedo') subtono = 'Cálido (Warm)';
 
   const lumiBase = Math.round(45 + (eyeToFace * 500) + (symScore * 0.25));
   const indiceLuminosidad = Math.max(40, Math.min(95, lumiBase));
+
+  const recomendacionesClave = {
+    grasa:    ['Control de sebo', 'Limpieza profunda 2x/día', 'Hidratación oil-free'],
+    mixta:    ['Balance zona T/mejillas', 'Sérum regulador', 'Protección solar ligera'],
+    seca:     ['Hidratación intensa', 'Evitar limpiadores espumosos', 'Barrera cutánea'],
+    sensible: ['Fórmulas sin fragancia', 'Activos calmantes', 'Mínimo de pasos'],
+    normal:   ['Mantenimiento preventivo', 'Antioxidantes', 'Hidratación diaria']
+  }[tipoPielDetectado] || ['Hidratación diaria', 'Protección solar'];
 
   return {
     tipoPielDetectado,
@@ -367,6 +377,7 @@ function analyzeFromLandmarks(landmarks, perfilUsuario) {
     puntosAnalizados: landmarks.length,
     indiceLuminosidad,
     zonasPreocupacion,
+    recomendacionesClave,
     metricas: {
       faceRatio: Math.round(faceRatio * 100) / 100,
       zonaTRatio: Math.round(zonaTRatio * 100) / 100,

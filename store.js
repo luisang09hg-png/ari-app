@@ -16,7 +16,6 @@ const store = {
     nivelMagenta:     'Magenta Lover 💖',
     darkMode:         false,
     a11yMode:         false,
-    regaloMode:       false,
     authUser:         null,
     authProfile:      null
   },
@@ -85,7 +84,7 @@ const store = {
     this._syncCartRemove(id);
   },
 
-  // ── Supabase cart sync (Task 9) ──
+  // ── Sincronización del carrito con Supabase ──
   async _syncCartToSupabase() {
     if (!this.state.authUser) return;
     try {
@@ -143,40 +142,5 @@ const store = {
     document.body.classList.toggle('a11y-mode', this.state.a11yMode);
   },
 
-  async addMagentaPoints(points, reason = 'Actividad ARI') {
-    let pointsToAdd = points;
 
-    if (this.state.authUser) {
-      try {
-        const { data, error } = await supabase.functions.invoke('add-points', {
-          body: { reason }
-        });
-        if (error) throw error;
-        if (data && data.success) {
-          pointsToAdd = data.points;
-        }
-      } catch (e) {
-        console.warn('Magenta points sync error via Edge Function:', e.message);
-        if (typeof showToast === 'function') {
-          showToast('Error al sincronizar puntos con el servidor.', 'error');
-        }
-      }
-    }
-
-    this.setState({ magentaPoints: this.state.magentaPoints + pointsToAdd });
-
-    // Update UI text
-    const mpText = document.getElementById('mp-puntos-text');
-    if (mpText) mpText.textContent = `${this.state.magentaPoints.toLocaleString()} pts`;
-
-    // Update progress bar (simulated: max 2000 pts to next level)
-    const progress = Math.min(100, Math.round((this.state.magentaPoints / 2000) * 100));
-    const bar = document.getElementById('mp-progress-bar');
-    if (bar) bar.style.width = `${progress}%`;
-
-    // Float animation
-    if (window.showPointsFloat) {
-      window.showPointsFloat(pointsToAdd);
-    }
-  }
 };

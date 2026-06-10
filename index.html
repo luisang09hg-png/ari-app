@@ -15,7 +15,6 @@
 
   <!-- MediaPipe FaceMesh -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
 
@@ -67,70 +66,9 @@
       <div><a href="#/privacidad" style="color:var(--color-primary); text-decoration:none; font-weight:600;">Política de Privacidad</a></div>
     </footer>
 
-    <!-- WIDGET GLOBAL MAGENTA POINTS — esquina inferior izquierda -->
-    <div id="magenta-points-widget" class="magenta-widget collapsed">
-      <button id="btn-toggle-magenta" class="magenta-toggle-btn" aria-label="Ver Magenta Points">
-        <i data-lucide="gem" style="width:15px;height:15px;"></i> Mis Puntos
-      </button>
-      <div class="magenta-content">
-        <button class="magenta-close-btn" id="btn-close-magenta" aria-label="Cerrar">✕</button>
-        <h4>✦ MAGENTA POINTS</h4>
-        <div class="magenta-level-badge">
-          <span>💖</span>
-          <span id="mp-nivel-text">Magenta Lover</span>
-        </div>
-        <p style="margin:0 0 6px; font-size:0.82em; color:var(--color-text-soft);">Puntos acumulados:</p>
-        <p style="margin:0 0 8px; font-size:1.3em; font-weight:700; color:var(--color-primary);" id="mp-puntos-text">
-          1,240 pts</p>
-        <div class="progress-container" style="height:6px; margin:0 0 6px;">
-          <div class="progress-bar" id="mp-progress-bar" style="width:62%;"></div>
-        </div>
-        <p class="caption" style="margin:0 0 12px;">62% hacia Magenta Top 💎</p>
-        <hr style="border:none; border-top:1px solid rgba(0,0,0,0.07); margin:10px 0;">
-        <ul class="magenta-benefits">
-          <li>🌸 <span><strong>Fan</strong> — Nivel inicial</span></li>
-          <li class="current">💖 <span><strong>Lover</strong> — Eventos exclusivos ✓</span></li>
-          <li>💎 <span><strong>Top</strong> — Envío gratis siempre</span></li>
-        </ul>
-        <hr style="border:none; border-top:1px solid rgba(0,0,0,0.07); margin:10px 0;">
-        <p class="caption warning-text" style="margin:4px 0;">⚠️ Puntos vencen: 31 dic 2026</p>
-        <p class="caption" style="color:var(--color-primary); font-weight:600; margin:4px 0;">Usar ARI hoy → +50 puntos
-          🎁</p>
-      </div>
-    </div>
 
-    <!-- ARI CHAT CONTEXTUAL — esquina inferior derecha -->
-    <div id="ari-chat-widget" class="chat-widget collapsed">
-      <button id="btn-toggle-chat" class="chat-toggle-btn" aria-label="Abrir chat con ARI">
-        <i data-lucide="message-circle" style="width:16px;height:16px;"></i> Habla con ARI
-      </button>
-      <div class="chat-content">
-        <div class="chat-header">
-          <strong>✦ ARI Chat</strong>
-          <button id="btn-close-chat" class="icon-btn-small" aria-label="Cerrar chat">
-            <i data-lucide="x" style="width:14px;height:14px;"></i>
-          </button>
-        </div>
-        <div class="chat-messages" id="chat-messages">
-          <div class="chat-msg ai-msg fade-in">
-            ¡Hola! Soy ARI 💖 ¿Tienes alguna duda sobre tu rutina o los productos recomendados?
-          </div>
-        </div>
-        <div class="chat-options" id="chat-options">
-          <button class="chat-opt-btn" data-q="embarazo">🤰 ¿Puedo usarlo si estoy embarazada?</button>
-          <button class="chat-opt-btn" data-q="economico">💰 ¿Hay una opción más económica?</button>
-          <button class="chat-opt-btn" data-q="resultados">⏳ ¿Cuándo veré resultados?</button>
-          <button class="chat-opt-btn" data-q="fragancia">🌸 ¿Tienen fragancia?</button>
-          <button class="chat-opt-btn" data-q="pielsensible">🧴 ¿Es apto para piel sensible?</button>
-        </div>
-        <div class="chat-input-container" id="chat-input-container">
-          <input type="text" id="chat-free-input" placeholder="Escribe tu pregunta..." autocomplete="off">
-          <button id="btn-send-chat" class="chat-send-btn" aria-label="Enviar">
-            <i data-lucide="send" style="width:16px;height:16px;"></i>
-          </button>
-        </div>
-      </div>
-    </div>
+
+
 
   </div>
 
