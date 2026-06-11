@@ -142,5 +142,22 @@ const store = {
     document.body.classList.toggle('a11y-mode', this.state.a11yMode);
   },
 
+  async saveRating(rating, comment) {
+    console.log('Valoración recibida:', { rating, comment });
+    // Preparado para Supabase en el futuro
+    if (this.state.authUser && typeof supabase !== 'undefined') {
+      try {
+        await supabase.from('ratings').insert([{
+          user_id: this.state.authUser.id,
+          rating: rating,
+          comment: comment,
+          created_at: new Date().toISOString()
+        }]);
+      } catch(e) {
+        console.warn('No se pudo guardar la valoración en Supabase', e);
+      }
+    }
+  }
+
 
 };

@@ -238,4 +238,27 @@ async function initAuth() {
     console.warn('Auth init:', e.message);
   }
   updateAuthUI();
+  
+  // Log page view para analíticas
+  sbLogPageView();
+}
+
+// ── Analytics ──
+async function sbLogPageView() {
+  try {
+    const user = await sbGetUser();
+    let sessionId = localStorage.getItem('ari_session_id');
+    if (!sessionId) {
+      sessionId = Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('ari_session_id', sessionId);
+    }
+    
+    await supabase.from('page_views').insert({
+      user_id: user ? user.id : null,
+      session_id: sessionId,
+      path: window.location.pathname + window.location.hash
+    });
+  } catch (e) {
+    console.warn('Analytics log failed:', e.message);
+  }
 }

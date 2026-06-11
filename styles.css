@@ -1051,5 +1051,52 @@ body.dark-mode .pm-header { color: #CE93D8; }
   animation: fadeIn 0.3s ease;
 }
 
-
-
+/* ── Formulario de Valoración ── */
+.rating-card {
+  background: var(--color-surface);
+  border: 1px solid rgba(254,1,130,0.1);
+  border-radius: var(--radius-card);
+  padding: 20px;
+  margin-top: 20px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.star-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #E2E8F0;
+  cursor: pointer;
+  transition: transform 0.2s, color 0.2s;
+  padding: 0;
+}
+.star-btn:hover, .star-btn.hovered, .star-btn.active {
+  color: #FBBF24;
+  transform: scale(1.15);
+}
+.rating-comment {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.1);
+  padding: 12px;
+  font-family: inherit;
+  font-size: 0.9em;
+  resize: none;
+  box-sizing: border-box;
+  margin-bottom: 12px;
+}
+.rating-comment:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+body.dark-mode .rating-comment {
+  background: rgba(255,255,255,0.05);
+  color: white;
+  border-color: rgba(255,255,255,0.1);
+}

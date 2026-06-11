@@ -920,12 +920,29 @@ const Screens = {
         </div>
       ` : '';
 
+      const ratingHTML = `
+        <div class="rating-card fade-in" id="rating-container">
+          <h3 style="font-size:1.05em; margin-bottom:4px; color:var(--color-primary);">¿Cómo calificarías tu experiencia con ARI?</h3>
+          <p class="caption">Tu opinión nos ayuda a mejorar</p>
+          <div class="rating-stars" id="rating-stars">
+            <button class="star-btn" data-val="1">★</button>
+            <button class="star-btn" data-val="2">★</button>
+            <button class="star-btn" data-val="3">★</button>
+            <button class="star-btn" data-val="4">★</button>
+            <button class="star-btn" data-val="5">★</button>
+          </div>
+          <textarea id="rating-comment" class="rating-comment" rows="2" placeholder="Comentarios adicionales (opcional)"></textarea>
+          <button id="btn-submit-rating" class="btn-primary" style="padding: 10px 20px; font-size: 0.9em;" disabled>Enviar Valoración</button>
+        </div>
+      `;
+
       return `
         <div style="width:100%;">
           ${diagHTML}
           ${alertHTML}
           ${rutinaHTML}
           ${upsellHTML}
+          ${ratingHTML}
           <div style="margin-top:20px;">
             <button onclick="router.navigate('/finalizar')" class="btn-primary">
               <i data-lucide="shopping-bag" style="margin-right:8px;vertical-align:middle;width:16px;"></i>
@@ -970,6 +987,64 @@ const Screens = {
         });
       });
 
+      // Rating form logic
+      let selectedRating = 0;
+      const stars = document.querySelectorAll('#rating-stars .star-btn');
+      const submitBtn = document.getElementById('btn-submit-rating');
+      const commentEl = document.getElementById('rating-comment');
+      const ratingContainer = document.getElementById('rating-container');
+
+      if (stars.length > 0) {
+        stars.forEach(star => {
+          // Hover logic
+          star.addEventListener('mouseenter', () => {
+            const val = parseInt(star.getAttribute('data-val'));
+            stars.forEach(s => {
+              if (parseInt(s.getAttribute('data-val')) <= val) {
+                s.classList.add('hovered');
+              } else {
+                s.classList.remove('hovered');
+              }
+            });
+          });
+
+          star.addEventListener('mouseleave', () => {
+            stars.forEach(s => s.classList.remove('hovered'));
+          });
+
+          // Click logic
+          star.addEventListener('click', () => {
+            selectedRating = parseInt(star.getAttribute('data-val'));
+            stars.forEach(s => {
+              if (parseInt(s.getAttribute('data-val')) <= selectedRating) {
+                s.classList.add('active');
+              } else {
+                s.classList.remove('active');
+              }
+            });
+            submitBtn.disabled = false; // Enable submit button
+          });
+        });
+
+        if (submitBtn) {
+          submitBtn.addEventListener('click', () => {
+            const comment = commentEl ? commentEl.value.trim() : '';
+            store.saveRating(selectedRating, comment);
+            
+            // Show success state
+            ratingContainer.innerHTML = `
+              <div style="padding: 20px 0;">
+                <div style="font-size:3em; margin-bottom:10px;">💖</div>
+                <h3 style="color:var(--color-primary); margin:0;">¡Gracias por tu valoración!</h3>
+                <p class="caption">Has calificado con ${selectedRating} estrellas.</p>
+              </div>
+            `;
+            if (typeof showToast === 'function') {
+              showToast('Valoración enviada', 'success');
+            }
+          });
+        }
+      }
 
     }
   },

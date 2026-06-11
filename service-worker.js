@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ari-v3-cache';
+const CACHE_NAME = 'ari-v4-cache';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
