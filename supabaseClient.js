@@ -152,6 +152,34 @@ async function sbGetOrders(userId, limit = 5) {
   return data || [];
 }
 
+async function sbSaveDiagnosisAndRating(ratingData, diagnosisData, routineData, turnstileToken) {
+  // En un backend real, aquí se validaría el turnstileToken con la API de Cloudflare
+  // fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { ... })
+  
+  if (!ratingData.user_id) return null;
+
+  // Insertar en una tabla unificada de 'diagnostics_and_ratings'
+  const { data, error } = await supabase
+    .from('diagnostics_and_ratings')
+    .insert({
+      user_id: ratingData.user_id,
+      rating: ratingData.rating,
+      comment: ratingData.comment,
+      diagnosis: diagnosisData,  // JSONB
+      routine: routineData,      // JSONB
+      turnstile_token: turnstileToken,
+      created_at: ratingData.created_at
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error saving diagnosis and rating:', error);
+    throw error;
+  }
+  return data;
+}
+
 // ── Toast Notification ──
 function showToast(message, type = 'info') {
   const existing = document.querySelector('.toast-notification');

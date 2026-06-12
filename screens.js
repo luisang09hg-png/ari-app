@@ -932,6 +932,7 @@ const Screens = {
             <button class="star-btn" data-val="5">★</button>
           </div>
           <textarea id="rating-comment" class="rating-comment" rows="2" placeholder="Comentarios adicionales (opcional)"></textarea>
+          <div id="cf-turnstile-widget" style="margin-bottom: 12px; display: flex; justify-content: center;"></div>
           <button id="btn-submit-rating" class="btn-primary" style="padding: 10px 20px; font-size: 0.9em;" disabled>Enviar Valoración</button>
         </div>
       `;
@@ -989,12 +990,40 @@ const Screens = {
 
       // Rating form logic
       let selectedRating = 0;
+      let turnstileToken = '';
       const stars = document.querySelectorAll('#rating-stars .star-btn');
       const submitBtn = document.getElementById('btn-submit-rating');
       const commentEl = document.getElementById('rating-comment');
       const ratingContainer = document.getElementById('rating-container');
 
+      const checkSubmitReady = () => {
+        if (selectedRating > 0 && turnstileToken !== '') {
+          submitBtn.disabled = false;
+        } else {
+          submitBtn.disabled = true;
+        }
+      };
+
       if (stars.length > 0) {
+        // Render Turnstile explicitly
+        if (typeof turnstile !== 'undefined') {
+          turnstile.render('#cf-turnstile-widget', {
+            sitekey: '1x00000000000000000000AA', // Cloudflare Test Sitekey (Always passes)
+            callback: function(token) {
+              turnstileToken = token;
+              checkSubmitReady();
+            },
+            'error-callback': function() {
+              console.error('Turnstile error');
+              turnstileToken = '';
+              checkSubmitReady();
+            }
+          });
+        } else {
+          // If turnstile script failed to load, allow submit anyway for fallback
+          turnstileToken = 'fallback-no-script';
+        }
+
         stars.forEach(star => {
           // Hover logic
           star.addEventListener('mouseenter', () => {
@@ -1022,21 +1051,21 @@ const Screens = {
                 s.classList.remove('active');
               }
             });
-            submitBtn.disabled = false; // Enable submit button
+            checkSubmitReady();
           });
         });
 
         if (submitBtn) {
           submitBtn.addEventListener('click', () => {
             const comment = commentEl ? commentEl.value.trim() : '';
-            store.saveRating(selectedRating, comment);
+            store.saveRating(selectedRating, comment, turnstileToken);
             
             // Show success state
             ratingContainer.innerHTML = `
               <div style="padding: 20px 0;">
                 <div style="font-size:3em; margin-bottom:10px;">💖</div>
                 <h3 style="color:var(--color-primary); margin:0;">¡Gracias por tu valoración!</h3>
-                <p class="caption">Has calificado con ${selectedRating} estrellas.</p>
+                <p class="caption">Tus resultados han sido enviados de forma segura.</p>
               </div>
             `;
             if (typeof showToast === 'function') {

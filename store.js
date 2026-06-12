@@ -142,19 +142,21 @@ const store = {
     document.body.classList.toggle('a11y-mode', this.state.a11yMode);
   },
 
-  async saveRating(rating, comment) {
-    console.log('Valoración recibida:', { rating, comment });
+  async saveRating(rating, comment, turnstileToken) {
+    console.log('Valoración y diagnóstico recibidos:', { rating, comment, turnstileToken });
     // Preparado para Supabase en el futuro
-    if (this.state.authUser && typeof supabase !== 'undefined') {
+    if (this.state.authUser && typeof sbSaveDiagnosisAndRating === 'function') {
       try {
-        await supabase.from('ratings').insert([{
+        const diagnosisData = this.state.diagnostico || null;
+        const routineData = this.state.rutinaGenerada || null;
+        await sbSaveDiagnosisAndRating({
           user_id: this.state.authUser.id,
           rating: rating,
           comment: comment,
           created_at: new Date().toISOString()
-        }]);
+        }, diagnosisData, routineData, turnstileToken);
       } catch(e) {
-        console.warn('No se pudo guardar la valoración en Supabase', e);
+        console.warn('No se pudo guardar la valoración y diagnóstico en Supabase', e);
       }
     }
   }
