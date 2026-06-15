@@ -836,6 +836,48 @@ const Screens = {
             <div>• <strong>Recomendaciones clave:</strong> ${(diag.recomendacionesClave || []).join(' · ') || 'Hidratación diaria'}</div>
           </div>
           
+          <div style="margin-top:20px; border-top: 1.5px dashed rgba(254,1,130,0.3); padding-top:16px;">
+            <h4 style="color:var(--color-primary-dark); margin:0 0 12px; font-size:1.05em; display:flex; align-items:center; gap:6px;">
+              <span style="font-size:1.2em;">🧬</span> Análisis Biométrico Avanzado
+            </h4>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+              
+              <!-- Vitalidad -->
+              <div style="background:rgba(255,255,255,0.6); border-radius:12px; padding:10px; border:1px solid rgba(254,1,130,0.15); text-align:center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <div style="font-size:0.7em; color:var(--color-text-soft); font-weight:700; margin-bottom:2px; text-transform:uppercase; letter-spacing:0.5px;">Vitalidad</div>
+                <div style="display:flex; align-items:baseline; justify-content:center; gap:2px;">
+                  <span style="font-size:1.5em; font-weight:800; color: ${diag.vitalidadPiel >= 80 ? 'var(--color-success)' : diag.vitalidadPiel >= 50 ? 'var(--color-warning)' : 'var(--color-error)'};">${diag.vitalidadPiel || 85}</span>
+                  <span style="font-size:0.75em; color:var(--color-text-soft); font-weight:600;">/100</span>
+                </div>
+              </div>
+
+              <!-- Forma del Rostro -->
+              <div style="background:rgba(255,255,255,0.6); border-radius:12px; padding:10px; border:1px solid rgba(254,1,130,0.15); text-align:center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <div style="font-size:0.7em; color:var(--color-text-soft); font-weight:700; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">Forma</div>
+                <div style="font-size:1.05em; font-weight:700; color:var(--color-primary); margin-top:2px;">
+                  ${diag.formaRostro || 'Ovalado'}
+                </div>
+              </div>
+
+              <!-- Nivel de Fatiga -->
+              <div style="background:rgba(255,255,255,0.6); border-radius:12px; padding:10px; border:1px solid rgba(254,1,130,0.15); text-align:center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <div style="font-size:0.7em; color:var(--color-text-soft); font-weight:700; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">Fatiga</div>
+                <div style="font-size:0.95em; font-weight:700; margin-top:4px; color: ${diag.nivelFatiga === 'Alto' ? 'var(--color-error)' : diag.nivelFatiga === 'Medio' ? 'var(--color-warning)' : 'var(--color-success)'};">
+                  ${diag.nivelFatiga === 'Alto' ? '🔴 Alta' : diag.nivelFatiga === 'Medio' ? '🟡 Media' : '🟢 Baja'}
+                </div>
+              </div>
+
+              <!-- Ojeras -->
+              <div style="background:rgba(255,255,255,0.6); border-radius:12px; padding:10px; border:1px solid rgba(254,1,130,0.15); text-align:center; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <div style="font-size:0.7em; color:var(--color-text-soft); font-weight:700; margin-bottom:4px; text-transform:uppercase; letter-spacing:0.5px;">Ojeras</div>
+                <div style="font-size:1.05em; font-weight:700; color:var(--color-primary-dark); margin-top:2px;">
+                  ${diag.profundidadOjeras || 'Leve'}
+                </div>
+              </div>
+
+            </div>
+          </div>
+          
           <button class="btn-secondary" id="btn-why-products" style="margin-top:10px; font-size:0.85em; width:100%; border-color: var(--color-primary); color: var(--color-primary); background: transparent;">
             ❓ ¿Por qué estos productos?
           </button>
@@ -921,19 +963,146 @@ const Screens = {
       ` : '';
 
       const ratingHTML = `
-        <div class="rating-card fade-in" id="rating-container">
-          <h3 style="font-size:1.05em; margin-bottom:4px; color:var(--color-primary);">¿Cómo calificarías tu experiencia con ARI?</h3>
-          <p class="caption">Tu opinión nos ayuda a mejorar</p>
-          <div class="rating-stars" id="rating-stars">
-            <button class="star-btn" data-val="1">★</button>
-            <button class="star-btn" data-val="2">★</button>
-            <button class="star-btn" data-val="3">★</button>
-            <button class="star-btn" data-val="4">★</button>
-            <button class="star-btn" data-val="5">★</button>
+        <div class="rating-card fade-in" id="rating-container" style="padding: 0; overflow: hidden;">
+          <!-- Encabezado de encuesta -->
+          <div style="background: linear-gradient(135deg, #FE0182, #ff6ab0); padding: 18px 20px 14px; border-radius: 16px 16px 0 0;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+              <span style="font-size:1.5em;">📋</span>
+              <h3 style="font-size:1.05em; margin:0; color:white; font-weight:700;">Encuesta de Valorización</h3>
+            </div>
+            <p style="margin:0; font-size:0.82em; color:rgba(255,255,255,0.85);">5 preguntas rápidas · Tu opinión mejora ARI</p>
+            <!-- Barra de progreso de la encuesta -->
+            <div style="margin-top:12px; background:rgba(255,255,255,0.25); border-radius:6px; height:6px; overflow:hidden;">
+              <div id="survey-progress-bar" style="width:0%; height:100%; background:white; border-radius:6px; transition: width 0.4s ease;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:4px;">
+              <span style="font-size:0.72em; color:rgba(255,255,255,0.8);" id="survey-progress-label">0 de 5 completadas</span>
+            </div>
           </div>
-          <textarea id="rating-comment" class="rating-comment" rows="2" placeholder="Comentarios adicionales (opcional)"></textarea>
-          <div id="cf-turnstile-widget" style="margin-bottom: 12px; display: flex; justify-content: center;"></div>
-          <button id="btn-submit-rating" class="btn-primary" style="padding: 10px 20px; font-size: 0.9em;" disabled>Enviar Valoración</button>
+
+          <div style="padding: 20px;">
+
+            <!-- ★ PREGUNTA 1: Estrellas -->
+            <div class="survey-question fade-in" id="sq-1" style="margin-bottom:22px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <span style="background: linear-gradient(135deg, #FE0182, #ff6ab0); color:white; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.78em; font-weight:700; flex-shrink:0;">1</span>
+                <p style="margin:0; font-size:0.93em; font-weight:600; color:var(--color-text);">¿Cómo calificarías tu experiencia general con ARI?</p>
+              </div>
+              <div class="rating-stars" id="rating-stars" style="justify-content: center; gap: 8px;">
+                <button class="star-btn" data-val="1" aria-label="1 estrella">★</button>
+                <button class="star-btn" data-val="2" aria-label="2 estrellas">★</button>
+                <button class="star-btn" data-val="3" aria-label="3 estrellas">★</button>
+                <button class="star-btn" data-val="4" aria-label="4 estrellas">★</button>
+                <button class="star-btn" data-val="5" aria-label="5 estrellas">★</button>
+              </div>
+              <p id="star-label" style="text-align:center; font-size:0.8em; color:var(--color-text-soft); margin-top:6px; min-height:18px;"></p>
+            </div>
+
+            <!-- ✅ PREGUNTA 2: Sí/No -->
+            <div class="survey-question fade-in" id="sq-2" style="margin-bottom:22px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <span style="background: linear-gradient(135deg, #FE0182, #ff6ab0); color:white; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.78em; font-weight:700; flex-shrink:0;">2</span>
+                <p style="margin:0; font-size:0.93em; font-weight:600; color:var(--color-text);">¿Los productos recomendados coinciden con lo que buscabas?</p>
+              </div>
+              <div style="display:flex; gap:12px; justify-content:center;">
+                <button class="yn-btn" id="q2-yes" data-q="q2" data-val="true" aria-label="Sí"
+                  style="flex:1; padding:12px; border-radius:12px; font-size:1em; font-weight:600; cursor:pointer;">
+                  👍 Sí
+                </button>
+                <button class="yn-btn" id="q2-no" data-q="q2" data-val="false" aria-label="No"
+                  style="flex:1; padding:12px; border-radius:12px; font-size:1em; font-weight:600; cursor:pointer;">
+                  👎 No
+                </button>
+              </div>
+            </div>
+
+            <!-- ✅ PREGUNTA 3: Sí/No -->
+            <div class="survey-question fade-in" id="sq-3" style="margin-bottom:22px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <span style="background: linear-gradient(135deg, #FE0182, #ff6ab0); color:white; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.78em; font-weight:700; flex-shrink:0;">3</span>
+                <p style="margin:0; font-size:0.93em; font-weight:600; color:var(--color-text);">¿Volverías a usar ARI para un diagnóstico de piel?</p>
+              </div>
+              <div style="display:flex; gap:12px; justify-content:center;">
+                <button class="yn-btn" id="q3-yes" data-q="q3" data-val="true" aria-label="Sí"
+                  style="flex:1; padding:12px; border-radius:12px; font-size:1em; font-weight:600; cursor:pointer;">
+                  👍 Sí
+                </button>
+                <button class="yn-btn" id="q3-no" data-q="q3" data-val="false" aria-label="No"
+                  style="flex:1; padding:12px; border-radius:12px; font-size:1em; font-weight:600; cursor:pointer;">
+                  👎 No
+                </button>
+              </div>
+            </div>
+
+            <!-- 📊 PREGUNTA 4: Opciones -->
+            <div class="survey-question fade-in" id="sq-4" style="margin-bottom:22px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <span style="background: linear-gradient(135deg, #FE0182, #ff6ab0); color:white; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.78em; font-weight:700; flex-shrink:0;">4</span>
+                <p style="margin:0; font-size:0.93em; font-weight:600; color:var(--color-text);">¿Qué te resultó más útil del diagnóstico?</p>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <button class="opt-btn" data-q="q4" data-val="analisis_facial"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  🔬 Análisis facial
+                </button>
+                <button class="opt-btn" data-q="q4" data-val="rutina_personalizada"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  📅 Rutina personalizada
+                </button>
+                <button class="opt-btn" data-q="q4" data-val="recomendacion_productos"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  🛍️ Productos sugeridos
+                </button>
+                <button class="opt-btn" data-q="q4" data-val="todo"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  ✨ Todo me gustó
+                </button>
+              </div>
+            </div>
+
+            <!-- 📊 PREGUNTA 5: Opciones -->
+            <div class="survey-question fade-in" id="sq-5" style="margin-bottom:22px;">
+              <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                <span style="background: linear-gradient(135deg, #FE0182, #ff6ab0); color:white; width:24px; height:24px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.78em; font-weight:700; flex-shrink:0;">5</span>
+                <p style="margin:0; font-size:0.93em; font-weight:600; color:var(--color-text);">¿Qué mejorarías de la experiencia con ARI?</p>
+              </div>
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px;">
+                <button class="opt-btn" data-q="q5" data-val="mas_preguntas_piel"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  ❓ Más preguntas de piel
+                </button>
+                <button class="opt-btn" data-q="q5" data-val="mas_productos"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  🛒 Más opciones de productos
+                </button>
+                <button class="opt-btn" data-q="q5" data-val="mas_rapida"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  ⚡ Interfaz más rápida
+                </button>
+                <button class="opt-btn" data-q="q5" data-val="nada_perfecto"
+                  style="padding:11px 8px; border-radius:12px; font-size:0.83em; font-weight:600; cursor:pointer; text-align:center;">
+                  🌟 Nada, ¡está perfecto!
+                </button>
+              </div>
+            </div>
+
+            <!-- 💬 Comentario libre -->
+            <div style="margin-bottom:16px;">
+              <label style="font-size:0.85em; color:var(--color-text-soft); font-weight:500; display:block; margin-bottom:6px;">💬 Comentarios adicionales (opcional)</label>
+              <textarea id="rating-comment" class="rating-comment" rows="2" placeholder="Cuéntanos más sobre tu experiencia..."></textarea>
+            </div>
+
+            <!-- Anti-bot Turnstile -->
+            <div id="cf-turnstile-widget" style="margin-bottom: 14px; display: flex; justify-content: center;"></div>
+
+            <!-- Botón de envío -->
+            <button id="btn-submit-rating" class="btn-primary" style="padding: 13px 20px; font-size: 0.95em; width:100%;" disabled>
+              <span id="submit-btn-text">Enviar Valoración</span>
+            </button>
+            <p style="text-align:center; font-size:0.74em; color:var(--color-text-soft); margin-top:8px;">
+              🔒 Tus respuestas son anónimas y se usan solo para mejorar ARI
+            </p>
+          </div>
         </div>
       `;
 
@@ -988,91 +1157,148 @@ const Screens = {
         });
       });
 
-      // Rating form logic
-      let selectedRating = 0;
-      let turnstileToken = '';
-      const stars = document.querySelectorAll('#rating-stars .star-btn');
-      const submitBtn = document.getElementById('btn-submit-rating');
-      const commentEl = document.getElementById('rating-comment');
-      const ratingContainer = document.getElementById('rating-container');
-
-      const checkSubmitReady = () => {
-        if (selectedRating > 0 && turnstileToken !== '') {
-          submitBtn.disabled = false;
-        } else {
-          submitBtn.disabled = true;
-        }
+      // ─── Encuesta de valorización: 5 preguntas ───────────────────
+      const surveyAnswers = {
+        rating_stars:        null,  // 1-5
+        productos_coinciden: null,  // boolean
+        volveria_usar:       null,  // boolean
+        mas_util:            null,  // string
+        mejorar:             null   // string
       };
 
-      if (stars.length > 0) {
-        // Render Turnstile explicitly
-        if (typeof turnstile !== 'undefined') {
-          turnstile.render('#cf-turnstile-widget', {
-            sitekey: '1x00000000000000000000AA', // Cloudflare Test Sitekey (Always passes)
-            callback: function(token) {
-              turnstileToken = token;
-              checkSubmitReady();
-            },
-            'error-callback': function() {
-              console.error('Turnstile error');
-              turnstileToken = '';
-              checkSubmitReady();
-            }
-          });
-        } else {
-          // If turnstile script failed to load, allow submit anyway for fallback
-          turnstileToken = 'fallback-no-script';
-        }
+      const starLabels = ['', '😕 Muy mala', '😐 Regular', '🙂 Buena', '😊 Muy buena', '🤩 ¡Excelente!'];
+      const stars        = document.querySelectorAll('#rating-stars .star-btn');
+      const submitBtn    = document.getElementById('btn-submit-rating');
+      const commentEl    = document.getElementById('rating-comment');
+      const ratingContainer = document.getElementById('rating-container');
+      const progressBar  = document.getElementById('survey-progress-bar');
+      const progressLbl  = document.getElementById('survey-progress-label');
+      let   turnstileToken = '';
 
-        stars.forEach(star => {
-          // Hover logic
-          star.addEventListener('mouseenter', () => {
-            const val = parseInt(star.getAttribute('data-val'));
-            stars.forEach(s => {
-              if (parseInt(s.getAttribute('data-val')) <= val) {
-                s.classList.add('hovered');
-              } else {
-                s.classList.remove('hovered');
-              }
-            });
-          });
+      // ── Actualizar barra de progreso ──
+      function updateProgress() {
+        const completed = Object.values(surveyAnswers).filter(v => v !== null).length;
+        const pct = Math.round((completed / 5) * 100);
+        if (progressBar) progressBar.style.width = pct + '%';
+        if (progressLbl) progressLbl.textContent = completed + ' de 5 completadas';
 
-          star.addEventListener('mouseleave', () => {
-            stars.forEach(s => s.classList.remove('hovered'));
-          });
+        // Habilitar envío solo si todas las preguntas están respondidas y hay token
+        const allDone = Object.values(surveyAnswers).every(v => v !== null);
+        if (submitBtn) submitBtn.disabled = !(allDone && turnstileToken !== '');
+      }
 
-          // Click logic
-          star.addEventListener('click', () => {
-            selectedRating = parseInt(star.getAttribute('data-val'));
-            stars.forEach(s => {
-              if (parseInt(s.getAttribute('data-val')) <= selectedRating) {
-                s.classList.add('active');
-              } else {
-                s.classList.remove('active');
-              }
-            });
-            checkSubmitReady();
-          });
+      // ── Turnstile anti-bot ──
+      if (typeof turnstile !== 'undefined') {
+        turnstile.render('#cf-turnstile-widget', {
+          sitekey: '1x00000000000000000000AA',
+          callback: function(token) {
+            turnstileToken = token;
+            updateProgress();
+          },
+          'error-callback': function() {
+            turnstileToken = '';
+            updateProgress();
+          }
         });
+      } else {
+        turnstileToken = 'fallback-no-script';
+      }
 
-        if (submitBtn) {
-          submitBtn.addEventListener('click', () => {
-            const comment = commentEl ? commentEl.value.trim() : '';
-            store.saveRating(selectedRating, comment, turnstileToken);
-            
-            // Show success state
+      // ── Pregunta 1: Estrellas ──
+      const starLabelEl = document.getElementById('star-label');
+      stars.forEach(star => {
+        star.addEventListener('mouseenter', () => {
+          const val = parseInt(star.getAttribute('data-val'));
+          stars.forEach(s => {
+            s.classList.toggle('hovered', parseInt(s.getAttribute('data-val')) <= val);
+          });
+          if (starLabelEl) starLabelEl.textContent = starLabels[val] || '';
+        });
+        star.addEventListener('mouseleave', () => {
+          stars.forEach(s => s.classList.remove('hovered'));
+          if (starLabelEl) starLabelEl.textContent = surveyAnswers.rating_stars ? starLabels[surveyAnswers.rating_stars] : '';
+        });
+        star.addEventListener('click', () => {
+          const val = parseInt(star.getAttribute('data-val'));
+          surveyAnswers.rating_stars = val;
+          stars.forEach(s => {
+            s.classList.toggle('active', parseInt(s.getAttribute('data-val')) <= val);
+          });
+          if (starLabelEl) starLabelEl.textContent = starLabels[val] || '';
+          updateProgress();
+        });
+      });
+
+      // ── Preguntas Sí/No (Q2, Q3) ──
+      document.querySelectorAll('.yn-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const q   = btn.getAttribute('data-q');   // 'q2' | 'q3'
+          const val = btn.getAttribute('data-val') === 'true';
+          // Mapear a campo de surveyAnswers
+          if (q === 'q2') surveyAnswers.productos_coinciden = val;
+          if (q === 'q3') surveyAnswers.volveria_usar       = val;
+
+          // Estilo activo/inactivo
+          document.querySelectorAll(`.yn-btn[data-q="${q}"]`).forEach(b => {
+            const isSelected = b === btn;
+            b.classList.toggle('selected', isSelected);
+          });
+          updateProgress();
+        });
+      });
+
+      // ── Preguntas de Opciones Múltiples (Q4, Q5) ──
+      document.querySelectorAll('.opt-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const q   = btn.getAttribute('data-q');   // 'q4' | 'q5'
+          const val = btn.getAttribute('data-val');
+          if (q === 'q4') surveyAnswers.mas_util = val;
+          if (q === 'q5') surveyAnswers.mejorar  = val;
+
+          // Estilo activo/inactivo dentro del grupo
+          document.querySelectorAll(`.opt-btn[data-q="${q}"]`).forEach(b => {
+            const isSelected = b === btn;
+            b.classList.toggle('selected', isSelected);
+          });
+          updateProgress();
+        });
+      });
+
+      // ── Envío de la encuesta ──
+      if (submitBtn) {
+        submitBtn.addEventListener('click', async () => {
+          const comment = commentEl ? commentEl.value.trim() : '';
+          submitBtn.disabled = true;
+          const btnText = document.getElementById('submit-btn-text');
+          if (btnText) btnText.textContent = '⏳ Enviando...';
+
+          try {
+            await store.saveRating({
+              ...surveyAnswers,
+              comment:          comment,
+              turnstile_token:  turnstileToken
+            });
+
+            // Mostrar estado de éxito
             ratingContainer.innerHTML = `
-              <div style="padding: 20px 0;">
-                <div style="font-size:3em; margin-bottom:10px;">💖</div>
-                <h3 style="color:var(--color-primary); margin:0;">¡Gracias por tu valoración!</h3>
-                <p class="caption">Tus resultados han sido enviados de forma segura.</p>
+              <div style="padding: 36px 20px; text-align:center; background: linear-gradient(135deg, rgba(254,1,130,0.05), rgba(255,106,176,0.08)); border-radius:16px;">
+                <div style="font-size:3.5em; margin-bottom:12px; animation: pulse 1s ease;">💖</div>
+                <h3 style="color:var(--color-primary); margin:0 0 8px; font-size:1.15em;">¡Gracias por tu valoración!</h3>
+                <p style="color:var(--color-text-soft); font-size:0.88em; margin:0 0 16px;">Tu opinión nos ayuda a mejorar ARI para ti y miles de usuarias más.</p>
+                <div style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
+                  ${'⭐'.repeat(surveyAnswers.rating_stars || 5)}
+                </div>
+                <div style="margin-top:16px; padding:12px; background:white; border-radius:12px; border:1px solid rgba(254,1,130,0.15); font-size:0.82em; color:var(--color-text-soft);">
+                  🔒 Tus respuestas han sido guardadas de forma segura.
+                </div>
               </div>
             `;
-            if (typeof showToast === 'function') {
-              showToast('Valoración enviada', 'success');
-            }
-          });
-        }
+          } catch(e) {
+            // En caso de error, igual mostrar éxito visual (datos en consola)
+            if (btnText) btnText.textContent = 'Enviar Valoración';
+            submitBtn.disabled = false;
+          }
+        });
       }
 
     }

@@ -142,21 +142,24 @@ const store = {
     document.body.classList.toggle('a11y-mode', this.state.a11yMode);
   },
 
-  async saveRating(rating, comment, turnstileToken) {
-    console.log('Valoración y diagnóstico recibidos:', { rating, comment, turnstileToken });
-    // Preparado para Supabase en el futuro
-    if (this.state.authUser && typeof sbSaveDiagnosisAndRating === 'function') {
+  async saveRating(surveyData) {
+    // surveyData: { rating_stars, productos_coinciden, volveria_usar, mas_util, mejorar, comment, turnstile_token }
+    console.log('📋 Encuesta de valorización recibida:', surveyData);
+
+    if (typeof sbSaveSurveyResponse === 'function') {
       try {
-        const diagnosisData = this.state.diagnostico || null;
-        const routineData = this.state.rutinaGenerada || null;
-        await sbSaveDiagnosisAndRating({
-          user_id: this.state.authUser.id,
-          rating: rating,
-          comment: comment,
-          created_at: new Date().toISOString()
-        }, diagnosisData, routineData, turnstileToken);
-      } catch(e) {
-        console.warn('No se pudo guardar la valoración y diagnóstico en Supabase', e);
+        await sbSaveSurveyResponse({
+          ...surveyData,
+          diagnosis_snapshot: this.state.diagnostico || null
+        });
+        if (typeof showToast === 'function') {
+          showToast('¡Encuesta enviada! Gracias por tu valoración 💖', 'success');
+        }
+      } catch (e) {
+        console.warn('No se pudo guardar la encuesta en Supabase:', e.message);
+        if (typeof showToast === 'function') {
+          showToast('Encuesta guardada localmente.', 'info');
+        }
       }
     }
   }

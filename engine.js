@@ -369,6 +369,32 @@ function analyzeFromLandmarks(landmarks, perfilUsuario) {
     normal:   ['Mantenimiento preventivo', 'Antioxidantes', 'Hidratación diaria']
   }[tipoPielDetectado] || ['Hidratación diaria', 'Protección solar'];
 
+  // ═══ NUEVAS MÉTRICAS BIOMÉTRICAS AVANZADAS ═══
+  // 1. Forma del Rostro
+  let formaRostro = 'Ovalado';
+  if (faceRatio > 0.85) formaRostro = 'Redondo';
+  else if (jawToFace > 0.75) formaRostro = 'Cuadrado';
+  else if (jawToFace < 0.55 && zonaTRatio > 0.55) formaRostro = 'Corazón';
+
+  // 2. Ojeras / Zona Periocular
+  const eyeBagDepthL = dist(145, 236) / (faceHeight || 0.001);
+  const eyeBagDepthR = dist(374, 456) / (faceHeight || 0.001);
+  const avgEyeBag = (eyeBagDepthL + eyeBagDepthR) / 2;
+  
+  let profundidadOjeras = 'Leve';
+  if (avgEyeBag > 0.16) profundidadOjeras = 'Alta';
+  else if (avgEyeBag > 0.12) profundidadOjeras = 'Moderada';
+
+  // 3. Nivel de Fatiga
+  const fatigueScore = (avgEyeBag * 100) + ((100 - symScore) * 0.5) + ((0.05 - eyeToFace) * 200);
+  let nivelFatiga = 'Bajo';
+  if (fatigueScore > 35) nivelFatiga = 'Alto';
+  else if (fatigueScore > 20) nivelFatiga = 'Medio';
+
+  // 4. Vitalidad de la Piel (0-100)
+  let vitalidadBase = (nivelHidratacion * 0.35) + (indiceLuminosidad * 0.35) + (symScore * 0.4) - (fatigueScore * 0.5);
+  const vitalidadPiel = Math.max(30, Math.min(98, Math.round(vitalidadBase)));
+
   return {
     tipoPielDetectado,
     nivelHidratacion,
@@ -378,10 +404,15 @@ function analyzeFromLandmarks(landmarks, perfilUsuario) {
     indiceLuminosidad,
     zonasPreocupacion,
     recomendacionesClave,
+    formaRostro,
+    vitalidadPiel,
+    nivelFatiga,
+    profundidadOjeras,
     metricas: {
       faceRatio: Math.round(faceRatio * 100) / 100,
       zonaTRatio: Math.round(zonaTRatio * 100) / 100,
-      simetria: symScore
+      simetria: symScore,
+      fatigueScore: Math.round(fatigueScore)
     }
   };
 }

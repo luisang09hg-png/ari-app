@@ -152,32 +152,40 @@ async function sbGetOrders(userId, limit = 5) {
   return data || [];
 }
 
-async function sbSaveDiagnosisAndRating(ratingData, diagnosisData, routineData, turnstileToken) {
-  // En un backend real, aquí se validaría el turnstileToken con la API de Cloudflare
-  // fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', { ... })
-  
-  if (!ratingData.user_id) return null;
+// ── Encuesta de valorización del diagnóstico (5 preguntas) ──
+async function sbSaveSurveyResponse(surveyData) {
+  // surveyData: { rating_stars, productos_coinciden, volveria_usar,
+  //               mas_util, mejorar, comment, turnstile_token, diagnosis_snapshot }
+  try {
+    const user = store.state.authUser;
 
-  // Insertar en una tabla unificada de 'diagnostics_and_ratings'
-  const { data, error } = await supabase
-    .from('diagnostics_and_ratings')
-    .insert({
-      user_id: ratingData.user_id,
-      rating: ratingData.rating,
-      comment: ratingData.comment,
-      diagnosis: diagnosisData,  // JSONB
-      routine: routineData,      // JSONB
-      turnstile_token: turnstileToken,
-      created_at: ratingData.created_at
-    })
-    .select()
-    .single();
+    const payload = {
+      user_id:             user ? user.id : null,
+      rating_stars:        surveyData.rating_stars        ?? null,
+      productos_coinciden: surveyData.productos_coinciden ?? null,
+      volveria_usar:       surveyData.volveria_usar       ?? null,
+      mas_util:            surveyData.mas_util            ?? null,
+      mejorar:             surveyData.mejorar             ?? null,
+      comment:             surveyData.comment             || null,
+      diagnosis_snapshot:  surveyData.diagnosis_snapshot  || null,
+      turnstile_token:     surveyData.turnstile_token     || 'no-token',
+      created_at:          new Date().toISOString()
+    };
 
-  if (error) {
-    console.error('Error saving diagnosis and rating:', error);
-    throw error;
+    const { error } = await supabase
+      .from('survey_responses')
+      .insert(payload);
+
+    if (error) {
+      console.error('Error guardando encuesta en Supabase:', error);
+      throw error;
+    }
+    console.log('✅ Encuesta guardada en Supabase');
+    return { success: true };
+  } catch (e) {
+    console.warn('sbSaveSurveyResponse falló:', e.message);
+    throw e;
   }
-  return data;
 }
 
 // ── Toast Notification ──

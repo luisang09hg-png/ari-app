@@ -1051,15 +1051,14 @@ body.dark-mode .pm-header { color: #CE93D8; }
   animation: fadeIn 0.3s ease;
 }
 
-/* ── Formulario de Valoración ── */
+/* ── Formulario de Valoración (existente) ── */
 .rating-card {
   background: var(--color-surface);
-  border: 1px solid rgba(254,1,130,0.1);
+  border: 1px solid rgba(254,1,130,0.15);
   border-radius: var(--radius-card);
-  padding: 20px;
   margin-top: 20px;
-  text-align: center;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(254,1,130,0.1), 0 2px 8px rgba(0,0,0,0.05);
 }
 .rating-stars {
   display: flex;
@@ -1070,33 +1069,117 @@ body.dark-mode .pm-header { color: #CE93D8; }
 .star-btn {
   background: none;
   border: none;
-  font-size: 28px;
+  font-size: 32px;
   color: #E2E8F0;
   cursor: pointer;
   transition: transform 0.2s, color 0.2s;
-  padding: 0;
+  padding: 0 2px;
+  line-height: 1;
 }
 .star-btn:hover, .star-btn.hovered, .star-btn.active {
   color: #FBBF24;
-  transform: scale(1.15);
+  transform: scale(1.2);
+  filter: drop-shadow(0 2px 6px rgba(251,191,36,0.5));
 }
 .rating-comment {
   width: 100%;
   border-radius: 12px;
-  border: 1px solid rgba(0,0,0,0.1);
+  border: 1.5px solid rgba(0,0,0,0.1);
   padding: 12px;
   font-family: inherit;
   font-size: 0.9em;
   resize: none;
   box-sizing: border-box;
   margin-bottom: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 .rating-comment:focus {
   outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(254,1,130,0.1);
 }
 body.dark-mode .rating-comment {
   background: rgba(255,255,255,0.05);
   color: white;
   border-color: rgba(255,255,255,0.1);
+}
+
+/* ── Encuesta de Valorización: nuevos elementos ── */
+
+/* Contenedor de cada pregunta */
+.survey-question {
+  animation: fadeIn 0.35s ease-out;
+}
+
+/* Separador visual entre preguntas */
+.survey-question + .survey-question {
+  border-top: 1px solid rgba(0,0,0,0.05);
+  padding-top: 18px;
+  margin-top: 2px;
+}
+body.dark-mode .survey-question + .survey-question {
+  border-top-color: rgba(255,255,255,0.08);
+}
+
+/* Botones Sí / No */
+.yn-btn {
+  background: white;
+  border: 2px solid #e0e0e0;
+  color: var(--color-text);
+  transition: background 0.2s ease, color 0.2s ease,
+              border-color 0.2s ease, transform 0.15s ease,
+              box-shadow 0.2s ease;
+}
+.yn-btn:active { transform: scale(0.97) !important; }
+
+/* Botones de opciones múltiples */
+.opt-btn {
+  background: white;
+  border: 2px solid #e0e0e0;
+  color: var(--color-text);
+  transition: background 0.2s ease, color 0.2s ease,
+              border-color 0.2s ease, transform 0.15s ease,
+              box-shadow 0.2s ease;
+  line-height: 1.35;
+}
+.opt-btn:active { transform: scale(0.97) !important; }
+
+/* Estado seleccionado para botones de encuesta */
+.yn-btn.selected,
+.opt-btn.selected {
+  background: linear-gradient(135deg, #FE0182, #ff6ab0) !important;
+  color: white !important;
+  border-color: #FE0182 !important;
+  transform: scale(1.03);
+  box-shadow: 0 4px 12px rgba(254,1,130,0.25) !important;
+}
+
+/* Dark mode para botones de encuesta inactivos */
+body.dark-mode .yn-btn,
+body.dark-mode .opt-btn {
+  background: rgba(255,255,255,0.07) !important;
+  border-color: rgba(255,255,255,0.18) !important;
+  color: var(--color-text) !important;
+}
+body.dark-mode .yn-btn:hover:not(.selected),
+body.dark-mode .opt-btn:hover:not(.selected) {
+  background: rgba(254,1,130,0.12) !important;
+  border-color: rgba(254,1,130,0.4) !important;
+}
+
+/* Barra de progreso de la encuesta (dentro del header) */
+#survey-progress-bar {
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Número de pregunta circular */
+.survey-question [style*="border-radius:50%"] {
+  flex-shrink: 0;
+}
+
+/* Responsive: en pantallas muy pequeñas, stack las opciones de 2 col */
+@media (max-width: 360px) {
+  .survey-question [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
 }
