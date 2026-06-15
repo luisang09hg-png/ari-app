@@ -157,30 +157,21 @@ async function sbSaveSurveyResponse(surveyData) {
   // surveyData: { rating_stars, productos_coinciden, volveria_usar,
   //               mas_util, mejorar, comment, turnstile_token, diagnosis_snapshot }
   try {
-    const user = store.state.authUser;
-
-    const payload = {
-      user_id:             user ? user.id : null,
-      rating_stars:        surveyData.rating_stars        ?? null,
-      productos_coinciden: surveyData.productos_coinciden ?? null,
-      volveria_usar:       surveyData.volveria_usar       ?? null,
-      mas_util:            surveyData.mas_util            ?? null,
-      mejorar:             surveyData.mejorar             ?? null,
-      comment:             surveyData.comment             || null,
-      diagnosis_snapshot:  surveyData.diagnosis_snapshot  || null,
-      turnstile_token:     surveyData.turnstile_token     || 'no-token',
-      created_at:          new Date().toISOString()
-    };
-
-    const { error } = await supabase
-      .from('survey_responses')
-      .insert(payload);
+    const { data, error } = await supabase.functions.invoke('verify-survey-response', {
+      body: { surveyData }
+    });
 
     if (error) {
-      console.error('Error guardando encuesta en Supabase:', error);
+      console.error('Error invocando Edge Function de encuesta:', error);
       throw error;
     }
-    console.log('✅ Encuesta guardada en Supabase');
+    
+    if (data && data.error) {
+       console.error('Validación de seguridad fallida:', data.error);
+       throw new Error(data.error);
+    }
+    
+    console.log('✅ Encuesta guardada y validada en Supabase mediante Edge Function');
     return { success: true };
   } catch (e) {
     console.warn('sbSaveSurveyResponse falló:', e.message);
@@ -196,7 +187,13 @@ function showToast(message, type = 'info') {
   const toast = document.createElement('div');
   toast.className = `toast-notification toast-${type} fade-in`;
   const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
-  toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+  const iconSpan = document.createElement('span');
+  iconSpan.textContent = icon;
+  const msgSpan = document.createElement('span');
+  msgSpan.textContent = message;
+  toast.appendChild(iconSpan);
+  toast.appendChild(document.createTextNode(' '));
+  toast.appendChild(msgSpan);
   document.body.appendChild(toast);
   setTimeout(() => {
     toast.style.opacity = '0';

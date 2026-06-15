@@ -72,7 +72,7 @@ serve(async (req) => {
       JSON.stringify({ success: true, points, reason }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('add-points function error:', error)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
