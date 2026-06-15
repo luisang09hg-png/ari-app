@@ -33,11 +33,11 @@ CREATE INDEX IF NOT EXISTS idx_survey_responses_rating_stars ON public.survey_re
 -- ── Row Level Security ──────────────────────────────────────
 ALTER TABLE public.survey_responses ENABLE ROW LEVEL SECURITY;
 
--- INSERT: Restringido para que solo se inserte a través de la Edge Function (service_role bypasses RLS)
--- CREATE POLICY "Anyone can insert survey responses"
---   ON public.survey_responses
---   FOR INSERT
---   WITH CHECK (true);
+-- INSERT: Cualquier usuario (autenticado o anónimo) puede enviar su encuesta
+CREATE POLICY "Anyone can insert survey responses"
+  ON public.survey_responses
+  FOR INSERT
+  WITH CHECK (true);
 
 -- SELECT: Solo el propio usuario puede ver sus respuestas
 CREATE POLICY "Users can view own survey responses"

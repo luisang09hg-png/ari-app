@@ -1190,7 +1190,7 @@ const Screens = {
       // ── Turnstile anti-bot ──
       if (typeof turnstile !== 'undefined') {
         turnstile.render('#cf-turnstile-widget', {
-          sitekey: '1x00000000000000000000AA',
+          sitekey: 'TU_SITE_KEY_REAL_AQUI', // IMPORTANTE: Reemplaza esto con tu Site Key de producción de Cloudflare
           callback: function(token) {
             turnstileToken = token;
             updateProgress();
