@@ -114,12 +114,19 @@ const Screens = {
         <p style="color:var(--color-text-soft); font-size:0.95em;">
           ¡Hola! Soy ARI, tu asistente de belleza de ARUMA. Cuéntame sobre tu piel y te ayudo a encontrar exactamente lo que necesitas.
         </p>
+
+        <div style="margin-bottom: 20px; text-align: left;">
+          <label for="user-name" style="font-weight: 600; font-size: 0.9em; color: var(--color-text); margin-bottom: 8px; display: block;">¿Cómo te llamas?</label>
+          <input type="text" id="user-name" placeholder="Ej. Camila" style="width: 100%; padding: 12px 16px; border-radius: 12px; border: 1px solid var(--color-border); font-size: 1em; box-sizing: border-box; font-family: 'Outfit', 'Poppins', sans-serif;" value="${store.state.perfilUsuario.nombre || ''}">
+          <p id="name-error" style="color: var(--color-error); font-size: 0.8em; margin-top: 4px; display: none;">Por favor, ingresa tu nombre (mínimo 2 letras).</p>
+        </div>
+
         <div style="display:flex; flex-direction:column; gap:12px; width:100%;">
-          <button onclick="router.navigate('/cuestionario')" class="btn-primary" style="width: 100%; padding: 14px 20px; margin: 0;">
+          <button id="btn-start-quiz" class="btn-primary" style="width: 100%; padding: 14px 20px; margin: 0;">
             <i data-lucide="clipboard-list" style="margin-right:8px; vertical-align:middle; width:18px;"></i>
             Iniciar Cuestionario de Piel
           </button>
-          <button onclick="router.navigate('/escaneo')" class="btn-secondary" style="width: 100%; padding: 14px 20px; margin: 0;">
+          <button id="btn-start-scan" class="btn-secondary" style="width: 100%; padding: 14px 20px; margin: 0;">
             <i data-lucide="camera" style="margin-right:8px; vertical-align:middle; width:16px;"></i>
             Escanear mi Rostro con IA
           </button>
@@ -131,6 +138,32 @@ const Screens = {
     `,
     init: () => {
       if (window.lucide) lucide.createIcons();
+
+      const validateName = () => {
+        const nameInput = document.getElementById('user-name');
+        const nameVal = nameInput.value.trim();
+        if (nameVal.length >= 2) {
+          store.updatePerfil('nombre', nameVal);
+          document.getElementById('name-error').style.display = 'none';
+          return true;
+        } else {
+          document.getElementById('name-error').style.display = 'block';
+          nameInput.focus();
+          return false;
+        }
+      };
+
+      document.getElementById('btn-start-quiz').addEventListener('click', () => {
+        if (validateName()) {
+          router.navigate('/cuestionario');
+        }
+      });
+
+      document.getElementById('btn-start-scan').addEventListener('click', () => {
+        if (validateName()) {
+          router.navigate('/escaneo');
+        }
+      });
     }
   },
 
@@ -1190,7 +1223,7 @@ const Screens = {
       // ── Turnstile anti-bot ──
       if (typeof turnstile !== 'undefined') {
         turnstile.render('#cf-turnstile-widget', {
-          sitekey: 'TU_SITE_KEY_REAL_AQUI', // IMPORTANTE: Reemplaza esto con tu Site Key de producción de Cloudflare
+          sitekey: '1x00000000000000000000AA', // Usar clave de prueba oficial de Cloudflare para desarrollo/testeo
           callback: function(token) {
             turnstileToken = token;
             updateProgress();

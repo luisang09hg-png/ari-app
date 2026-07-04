@@ -146,14 +146,15 @@ const store = {
     // surveyData: { rating_stars, productos_coinciden, volveria_usar, mas_util, mejorar, comment, turnstile_token }
     console.log('📋 Encuesta de valorización recibida:', surveyData);
 
-    if (typeof sbSaveSurveyResponse === 'function') {
+    if (typeof sbSaveDiagnostico === 'function') {
       try {
-        await sbSaveSurveyResponse({
+        await sbSaveDiagnostico({
           ...surveyData,
+          nombre: this.state.perfilUsuario.nombre || 'Anónimo',
           diagnosis_snapshot: this.state.diagnostico || null
         });
         if (typeof showToast === 'function') {
-          showToast('¡Encuesta enviada! Gracias por tu valoración 💖', 'success');
+          showToast('¡Encuesta y diagnóstico guardados con éxito! 💖', 'success');
         }
       } catch (e) {
         console.warn('No se pudo guardar la encuesta en Supabase:', e.message);

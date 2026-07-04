@@ -35,6 +35,51 @@ body.dark-mode .app-bg {
   background: linear-gradient(160deg, #1A1A2E 0%, #2D1B3D 60%, #1A1A3E 100%) !important;
 }
 
+/* ── Dark Mode: Filtros del catálogo ── */
+body.dark-mode .filter-chip {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+body.dark-mode .filter-chip:hover:not(.active) {
+  background: rgba(254, 1, 130, 0.15);
+  border-color: rgba(254, 1, 130, 0.35);
+}
+body.dark-mode .filter-chip.active {
+  background: var(--color-primary);
+  color: white;
+  border-color: var(--color-primary);
+  box-shadow: 0 2px 12px rgba(254, 1, 130, 0.35);
+}
+
+/* ── Dark Mode: Campo de búsqueda del catálogo ── */
+body.dark-mode #cat-search {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--color-text);
+}
+body.dark-mode #cat-search::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+body.dark-mode #cat-search:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(254, 1, 130, 0.15);
+}
+
+/* ── Dark Mode: Tarjetas de producto ── */
+body.dark-mode .product-card-compact {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+body.dark-mode .product-card-compact:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(254, 1, 130, 0.25);
+}
+body.dark-mode .card {
+  background: rgba(45, 27, 61, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
 /* Modo Accesibilidad */
 body.a11y-mode {
   --font-base-size: 20px;
@@ -53,12 +98,59 @@ body {
 }
 
 .app-bg {
+  position: relative;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   box-sizing: border-box;
   background: linear-gradient(160deg, #FFFFFF 0%, #FCE4F1 60%, #F3E8FF 100%);
+}
+
+.app-bg::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: url('makeup-bg.jpg');
+  background-repeat: repeat;
+  background-size: 150px;
+  opacity: 0.06;
+  pointer-events: none;
+  z-index: 0;
+}
+
+body.dark-mode .app-bg::before {
+  opacity: 0.03;
+  filter: grayscale(100%) invert(100%);
+}
+
+#app-root, .app-footer {
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Desktop Side Banners (solo visibles en laptop/desktop) ── */
+@media (min-width: 1024px) {
+  body::before, body::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    width: calc(50vw - 240px);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 0;
+    pointer-events: none;
+  }
+  body::before {
+    left: 0;
+    background-image: url('assets/left_banner.png');
+  }
+  body::after {
+    right: 0;
+    background-image: url('assets/right_banner.png');
+  }
 }
 
 /* ── Header ── */
