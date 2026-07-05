@@ -180,34 +180,23 @@ async function sbSaveSurveyResponse(surveyData) {
 }
 
 // ── Guardar Diagnóstico y Encuesta directamente (Paso 4) ──
-async function sbSaveDiagnostico(datos) {
-  try {
-    const payload = {
-      nombre: datos.nombre || 'Anónimo',
-      diagnostico: datos.diagnosis_snapshot || null,
-      encuesta: {
-        rating: datos.rating_stars,
-        coinciden: datos.productos_coinciden,
-        volveria_usar: datos.volveria_usar,
-        mas_util: datos.mas_util,
-        mejorar: datos.mejorar
-      },
-      comentario: datos.comment || null
-    };
+async function guardarDiagnostico(nombre, diagnostico, encuesta, comentario) {
+  const { data, error } = await supabase
+    .from('diagnosticos')
+    .insert([
+      { 
+        nombre: nombre, 
+        diagnostico: diagnostico, // Objeto JSON
+        encuesta: encuesta,       // Objeto JSON
+        comentario: comentario 
+      }
+    ]);
 
-    const { data, error } = await supabase
-      .from('diagnosticos')
-      .insert([payload])
-      .select()
-      .single();
-
-    if (error) throw error;
-    console.log('✅ Diagnóstico y encuesta guardados en Supabase:', data);
-    return data;
-  } catch (e) {
-    console.error('Error al guardar en Supabase (tabla diagnosticos):', e.message);
-    throw e;
+  if (error) {
+    console.error("Error al enviar datos:", error.message);
+    return false;
   }
+  return data;
 }
 
 // ── Toast Notification ──

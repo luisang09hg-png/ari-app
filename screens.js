@@ -495,7 +495,10 @@ const Screens = {
           Procesamiento local · Nunca enviamos tu imagen
         </div>
 
-        <button id="btn-activate-cam" class="btn-primary">
+        <!-- Cloudflare Turnstile Widget Container -->
+        <div id="cf-turnstile-scanner" style="margin-bottom:16px; display:flex; justify-content:center; min-height: 65px;"></div>
+
+        <button id="btn-activate-cam" class="btn-primary" disabled>
           <i data-lucide="camera" style="margin-right:8px; vertical-align:middle; width:16px;"></i>
           Activar Cámara
         </button>
@@ -558,6 +561,20 @@ const Screens = {
         stateMsg.className = `cam-state-badge cam-state-${type}`;
         stateText.textContent = text;
       }
+
+      // ── Integración de Cloudflare Turnstile para Seguridad ──
+      const checkTurnstile = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(checkTurnstile);
+          window.turnstile.render('#cf-turnstile-scanner', {
+            sitekey: '1x00000000000000000000AA', // Sitekey de prueba de Cloudflare
+            callback: function(token) {
+              activateBtn.disabled = false;
+            }
+          });
+        }
+      }, 100);
+
 
       activateBtn.addEventListener('click', async () => {
         activateBtn.disabled = true;

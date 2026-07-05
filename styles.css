@@ -25,14 +25,15 @@
 
 /* Modo Oscuro */
 body.dark-mode {
-  --color-bg:             #1A1A2E;
-  --color-surface:        rgba(45,27,61,0.95);
-  --color-text:           #F8F8F8;
-  --color-text-soft:      #B0B0B0;
-  --color-primary-light:  rgba(254,1,130,0.18);
+  --color-bg:             #0B0B0F;
+  --color-surface:        rgba(25,20,32,0.75);
+  --color-text:           #FFFFFF;
+  --color-text-soft:      #B3B3B3;
+  --color-primary-light:  rgba(254,1,130,0.25);
+  --shadow-card:          0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2);
 }
 body.dark-mode .app-bg {
-  background: linear-gradient(160deg, #1A1A2E 0%, #2D1B3D 60%, #1A1A3E 100%) !important;
+  background: linear-gradient(160deg, #0B0B0F 0%, #171120 60%, #0B0B0F 100%) !important;
 }
 
 /* ── Dark Mode: Filtros del catálogo ── */
@@ -76,8 +77,11 @@ body.dark-mode .product-card-compact:hover {
   border-color: rgba(254, 1, 130, 0.25);
 }
 body.dark-mode .card {
-  background: rgba(45, 27, 61, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(25, 20, 32, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
 /* Modo Accesibilidad */
@@ -105,6 +109,9 @@ body {
   align-items: center;
   box-sizing: border-box;
   background: linear-gradient(160deg, #FFFFFF 0%, #FCE4F1 60%, #F3E8FF 100%);
+  max-width: 480px;
+  margin: 0 auto;
+  box-shadow: 0 0 20px rgba(0,0,0,0.1);
 }
 
 .app-bg::before {
@@ -129,26 +136,33 @@ body.dark-mode .app-bg::before {
   z-index: 1;
 }
 
+/* ── Banners Laterales por Defecto (Móvil) ── */
+body::before, body::after {
+  display: none;
+}
+
 /* ── Desktop Side Banners (solo visibles en laptop/desktop) ── */
 @media (min-width: 1024px) {
   body::before, body::after {
     content: "";
+    display: block;
     position: fixed;
     top: 0;
     bottom: 0;
-    width: calc(50vw - 240px);
+    width: calc(50vw - 280px);
     background-size: cover;
-    background-position: center;
     background-repeat: no-repeat;
     z-index: 0;
     pointer-events: none;
   }
   body::before {
     left: 0;
+    background-position: left center;
     background-image: url('assets/left_banner.png');
   }
   body::after {
     right: 0;
+    background-position: right center;
     background-image: url('assets/right_banner.png');
   }
 }
